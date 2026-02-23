@@ -1,14 +1,14 @@
 {
-  "name": "localmind",
+  "name": "digo",
   "private": true,
-  "version": "0.0.3",
-  "description": "LocalMind - AI Black Box",
+  "version": "0.0.4",
+  "description": "Digo - AI Black Box",
   "author": "Victor Muñoz Lopez",
   "license": "Apache-2.0",
   "main": "dist-electron/main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Viicttoriius/localmind.git"
+    "url": "https://github.com/Viicttoriius/digo.git"
   },
   "scripts": {
     "generate-secrets": "node scripts/generate-secrets.js",
@@ -74,7 +74,7 @@
       {
         "provider": "github",
         "owner": "Viicttoriius",
-        "repo": "localmind"
+        "repo": "digo"
       }
     ],
     "directories": {

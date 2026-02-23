@@ -99,7 +99,7 @@ export function Chat() {
           <div className="text-center space-y-4">
             <Bot className="w-16 h-16 text-blue-500 mx-auto" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-              LocalMind AI
+              Digo AI
             </h1>
             <p className="text-slate-400 text-lg">Selecciona un rol para comenzar la conversación</p>
           </div>
@@ -142,7 +142,7 @@ export function Chat() {
         <div className="flex items-center gap-2">
           <Bot className="w-6 h-6 text-emerald-400" />
           <div className="flex flex-col">
-            <h1 className="font-bold text-lg leading-none">LocalMind AI</h1>
+            <h1 className="font-bold text-lg leading-none">Digo AI</h1>
             <span className="text-xs text-slate-400">Rol: {systemRole}</span>
           </div>
         </div>

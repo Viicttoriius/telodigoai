@@ -42,7 +42,7 @@ export const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ onRegist
           <div className="w-16 h-16 bg-blue-600 rounded-xl mx-auto flex items-center justify-center mb-4">
             <Building className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Bienvenido a LocalMind</h1>
+          <h1 className="text-2xl font-bold mb-2">Bienvenido a Digo</h1>
           <p className="text-slate-400">Por favor, registra este dispositivo para continuar.</p>
         </div>
 
