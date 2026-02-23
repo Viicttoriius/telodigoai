@@ -64,8 +64,8 @@
     "wait-on": "^7.0.0"
   },
   "build": {
-    "appId": "com.localmind.app",
-    "productName": "LocalMind",
+    "appId": "com.digo.app",
+    "productName": "Digo",
     "asar": true,
     "asarUnpack": [
       "**/node_modules/n8n/**/*"
@@ -107,7 +107,7 @@
       "deleteAppDataOnUninstall": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "LocalMind",
+      "shortcutName": "Digo",
       "runAfterFinish": true,
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",
