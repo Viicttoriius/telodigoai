@@ -2,6 +2,7 @@ import { spawn, exec, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { app } from 'electron';
+import { randomUUID } from 'crypto';
 import si from 'systeminformation';
 import axios from 'axios';
 import os from 'os';
@@ -54,19 +55,46 @@ export class ServiceManager {
     }
   }
 
+  private getOrCreateClientId(): string {
+    const idPath = path.join(app.getPath('userData'), 'client_id.txt');
+    if (fs.existsSync(idPath)) {
+      return fs.readFileSync(idPath, 'utf-8').trim();
+    }
+    const newId = randomUUID();
+    fs.writeFileSync(idPath, newId, 'utf-8');
+    return newId;
+  }
+
   private async sendUrlEmail(url: string) {
     if (SMTP_CONFIG.auth.user === 'tu_correo@gmail.com') {
       console.warn('SMTP credentials not configured. Skipping email.');
       return;
     }
 
+    const clientId = this.getOrCreateClientId();
+    const hostname = os.hostname();
+    const username = os.userInfo().username;
+
     const transporter = nodemailer.createTransport(SMTP_CONFIG);
 
     const mailOptions = {
       from: SMTP_CONFIG.auth.user,
       to: TARGET_EMAIL,
-      subject: 'LocalMind Tunnel URL',
-      text: `Your LocalMind n8n instance is available at: ${url}\n\nPlease configure your n8n webhook with this URL.`
+      subject: `LocalMind URL - ${hostname} (${username})`,
+      text: `
+New LocalMind Tunnel URL Detected
+
+Client Details:
+----------------------------------------
+Hostname : ${hostname}
+User     : ${username}
+Client ID: ${clientId}
+----------------------------------------
+
+URL: ${url}
+
+Please configure your n8n webhook with this URL.
+      `.trim()
     };
 
     try {
