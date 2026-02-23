@@ -15,7 +15,8 @@
     "dev": "concurrently -k \"npm run dev:react\" \"npm run dev:electron\"",
     "dev:react": "vite",
     "dev:electron": "npm run generate-secrets && wait-on tcp:5173 && tsc -p electron/tsconfig.json && electron .",
-    "build": "npm run generate-secrets && tsc -p electron/tsconfig.json && vite build && electron-builder",
+    "rebuild": "electron-rebuild -f",
+    "build": "npm run generate-secrets && tsc -p electron/tsconfig.json && vite build && npm run rebuild && electron-builder",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -46,6 +47,7 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
     "@types/node": "^20.0.0",
     "@types/nodemailer": "^7.0.11",
     "@types/react": "^18.2.0",
@@ -99,7 +101,7 @@
       "target": "nsis",
       "icon": "resources/icon.ico"
     },
-    "npmRebuild": true,
+    "npmRebuild": false,
     "nsis": {
       "include": "build/installer.nsh",
       "oneClick": false,

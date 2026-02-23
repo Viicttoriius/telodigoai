@@ -22,15 +22,15 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Setup build tools
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
       - name: Install Dependencies
         run: |
-          npm config set msvs_version 2022
+          npm install -g node-gyp
           npm ci
+        env:
+          npm_config_msvs_version: 2022
 
       - name: Create .env file from Secrets
         shell: bash

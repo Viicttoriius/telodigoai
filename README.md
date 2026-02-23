@@ -34,4 +34,4 @@ Al abrir Digo por primera vez:
 
 Este proyecto está licenciado bajo la **Licencia Apache 2.0**. Consulta el archivo `LICENSE` para más detalles.
 
-Copyright 2024 Victor Muñoz Lopez.
+Copyright 2026 Victor Muñoz Lopez.
