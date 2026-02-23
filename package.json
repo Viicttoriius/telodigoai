@@ -11,10 +11,11 @@
     "url": "https://github.com/Viicttoriius/localmind.git"
   },
   "scripts": {
+    "generate-secrets": "node scripts/generate-secrets.js",
     "dev": "concurrently -k \"npm run dev:react\" \"npm run dev:electron\"",
     "dev:react": "vite",
-    "dev:electron": "wait-on tcp:5173 && tsc -p electron/tsconfig.json && electron .",
-    "build": "tsc -p electron/tsconfig.json && vite build && electron-builder",
+    "dev:electron": "npm run generate-secrets && wait-on tcp:5173 && tsc -p electron/tsconfig.json && electron .",
+    "build": "npm run generate-secrets && tsc -p electron/tsconfig.json && vite build && electron-builder",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -44,6 +45,7 @@
     "autoprefixer": "^10.4.0",
     "concurrently": "^8.0.0",
     "cross-env": "^7.0.0",
+    "dotenv": "^17.3.1",
     "electron": "31.0.0",
     "electron-builder": "^24.0.0",
     "postcss": "^8.4.0",

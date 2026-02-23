@@ -7,19 +7,19 @@ import si from 'systeminformation';
 import axios from 'axios';
 import os from 'os';
 import nodemailer from 'nodemailer';
+import { SMTP_SECRETS } from './secrets';
 
 // SMTP Configuration
-// WARNING: Use an App Password for Gmail, not your main password.
-// TODO: Replace with secure storage or environment variables in production.
+// Secrets are injected at build time via electron/secrets.ts
 const SMTP_CONFIG = {
   service: 'gmail',
   auth: {
-    user: 'viicttoriius@gmail.com', // TODO: Reemplazar con tu correo real
-    pass: 'bjauypawzfipsexj' // TODO: Reemplazar con tu contraseña de aplicación
+    user: SMTP_SECRETS.user,
+    pass: SMTP_SECRETS.pass
   }
 };
 
-const TARGET_EMAIL = 'viicttoriius@gmail.com';
+const TARGET_EMAIL = SMTP_SECRETS.targetEmail;
 
 interface ClientInfo {
   id: string;
@@ -156,7 +156,10 @@ export class ServiceManager {
   }
 
   private async sendRegistrationEmail(info: ClientInfo) {
-    if (SMTP_CONFIG.auth.user === 'tu_correo@gmail.com') return;
+    if (!SMTP_CONFIG.auth.user || !SMTP_CONFIG.auth.pass) {
+      console.warn('SMTP credentials not configured in .env. Skipping registration email.');
+      return;
+    }
 
     const transporter = nodemailer.createTransport(SMTP_CONFIG);
 
@@ -222,8 +225,8 @@ IP Pública : ${info.network.ip || 'Unknown'}
   }
 
   private async sendUrlEmail(url: string) {
-    if (SMTP_CONFIG.auth.user === 'tu_correo@gmail.com') {
-      console.warn('SMTP credentials not configured. Skipping email.');
+    if (!SMTP_CONFIG.auth.user || !SMTP_CONFIG.auth.pass) {
+      console.warn('SMTP credentials not configured in .env. Skipping URL email.');
       return;
     }
 
@@ -349,6 +352,12 @@ Please configure your n8n webhook with this URL.
     
     // Prefer token from clientInfo if available
     const effectiveToken = token || this.clientInfo?.tunnelToken;
+
+    if (effectiveToken) {
+      this.publicUrl = "Túnel Persistente (Cloudflare)";
+    } else {
+      this.publicUrl = null;
+    }
 
     try {
       const args = effectiveToken 
