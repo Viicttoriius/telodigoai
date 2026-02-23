@@ -8,7 +8,8 @@
     "skipLibCheck": true,
     "target": "es2022",
     "lib": ["ES2022"],
-    "sourceMap": true
+    "sourceMap": true,
+    "types": ["node", "nodemailer", "systeminformation"]
   },
   "include": [
     "."

@@ -11,12 +11,10 @@ import nodemailer from 'nodemailer';
 // WARNING: Use an App Password for Gmail, not your main password.
 // TODO: Replace with secure storage or environment variables in production.
 const SMTP_CONFIG = {
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // true for 465, false for other ports
+  service: 'gmail',
   auth: {
-    user: 'tu_correo@gmail.com', // CAMBIAR ESTO
-    pass: 'tu_contraseña_de_aplicacion' // CAMBIAR ESTO
+    user: 'viicttoriius@gmail.com', // TODO: Reemplazar con tu correo real
+    pass: 'bjauypawzfipsexj' // TODO: Reemplazar con tu contraseña de aplicación
   }
 };
 
