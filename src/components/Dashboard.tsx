@@ -118,20 +118,23 @@ export function Dashboard() {
         {updateStatus === 'available' && (
           <div className="flex items-center gap-2 text-amber-400 animate-pulse">
             <Download className="w-3 h-3" />
-            <span>Update Available</span>
+            <span>Descargando actualización...</span>
           </div>
         )}
         {downloadProgress > 0 && downloadProgress < 100 && (
           <div className="flex items-center gap-2 text-blue-400">
             <Download className="w-3 h-3" />
-            <span>Downloading {downloadProgress}%</span>
+            <span>{downloadProgress}%</span>
           </div>
         )}
         {updateStatus === 'ready' && (
-          <div className="flex items-center gap-2 text-emerald-400">
+          <button 
+            className="flex items-center gap-2 px-2 py-0.5 rounded bg-emerald-900/30 border border-emerald-800 text-emerald-400 hover:bg-emerald-900/50 hover:text-emerald-300 transition-colors cursor-pointer animate-pulse"
+            onClick={() => (window as any).api.installUpdate()}
+          >
             <AlertCircle className="w-3 h-3" />
-            <span>Restart to Update</span>
-          </div>
+            <span className="font-bold">Reiniciar para Actualizar</span>
+          </button>
         )}
       </div>
       

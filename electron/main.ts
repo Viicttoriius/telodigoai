@@ -9,7 +9,7 @@ import { autoUpdater } from 'electron-updater';
 fixPath();
 
 // Auto Update Configuration
-autoUpdater.autoDownload = false;
+autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 const store = new Store();
@@ -78,16 +78,7 @@ function createWindow() {
 // --- AUTO UPDATER EVENTS ---
 autoUpdater.on('update-available', () => {
   mainWindow?.webContents.send('update-status', { status: 'available' });
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Actualización disponible',
-    message: 'Hay una nueva versión de LocalMind. ¿Quieres descargarla ahora?',
-    buttons: ['Sí', 'No']
-  }).then((result) => {
-    if (result.response === 0) {
-      autoUpdater.downloadUpdate();
-    }
-  });
+  // No dialog needed, auto downloading
 });
 
 autoUpdater.on('update-not-available', () => {
@@ -96,10 +87,11 @@ autoUpdater.on('update-not-available', () => {
 
 autoUpdater.on('update-downloaded', () => {
   mainWindow?.webContents.send('update-status', { status: 'ready' });
+  // Optional: notify user via dialog or just rely on UI button
   dialog.showMessageBox({
     type: 'info',
     title: 'Actualización lista',
-    message: 'La actualización se ha descargado. La aplicación se reiniciará para instalarla.',
+    message: 'La actualización se ha descargado. Por favor reinicia la aplicación para aplicar los cambios.',
     buttons: ['Reiniciar ahora', 'Más tarde']
   }).then((result) => {
     if (result.response === 0) {
@@ -190,4 +182,8 @@ ipcMain.handle('update:check', () => {
   if (app.isPackaged) {
     autoUpdater.checkForUpdates();
   }
+});
+
+ipcMain.handle('update:install', () => {
+  autoUpdater.quitAndInstall(false, true);
 });

@@ -17,6 +17,7 @@ export function Chat() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [systemRole, setSystemRole] = useState('Assistant');
+  const [isRoleSelected, setIsRoleSelected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -27,6 +28,11 @@ export function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleRoleSelect = (role: string) => {
+    setSystemRole(role);
+    setIsRoleSelected(true);
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -43,30 +49,34 @@ export function Chat() {
     setIsLoading(true);
 
     try {
-      // Assuming n8n webhook is running locally
-      // In a real app, this URL should be configurable or discovered
-      const response = await axios.post('http://localhost:5678/webhook/chat', {
-        chatInput: input,
-        systemRole: systemRole,
-        // Add file processing here if needed
+      // Try to connect to local Ollama instance (Standard Port 11434)
+      // This bypasses n8n completely for simple chat
+      const response = await axios.post('http://localhost:11434/api/chat', {
+        model: 'llama3', // Default model
+        messages: [
+          { role: 'system', content: `You are a helpful assistant acting as a ${systemRole}. Respond in Spanish.` },
+          ...messages.map(m => ({ role: m.role, content: m.content })),
+          { role: 'user', content: userMsg.content }
+        ],
+        stream: false
       });
       
-      // Handle n8n response structure
-      // Assuming n8n returns { output: "text" }
       const botMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.data.output || response.data.text || JSON.stringify(response.data),
+        content: response.data.message.content,
         timestamp: Date.now(),
       };
       
       setMessages(prev => [...prev, botMsg]);
     } catch (error) {
       console.error('Chat error:', error);
+      
+      // Fallback if Ollama is not reachable (e.g., CORS or not running)
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Error: Could not connect to LocalMind Core (n8n). Ensure the webhook is active.',
+        content: 'Error: No se pudo conectar con el modelo local (Ollama). Asegúrate de que el servicio esté corriendo en el puerto 11434. Si es la primera vez, puede que el modelo se esté descargando en segundo plano.',
         timestamp: Date.now(),
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -82,24 +92,61 @@ export function Chat() {
     }
   };
 
+  if (!isRoleSelected) {
+    return (
+      <div className="flex flex-col h-full bg-slate-900 text-slate-100 items-center justify-center p-8">
+        <div className="max-w-4xl w-full space-y-8">
+          <div className="text-center space-y-4">
+            <Bot className="w-16 h-16 text-blue-500 mx-auto" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+              LocalMind AI
+            </h1>
+            <p className="text-slate-400 text-lg">Selecciona un rol para comenzar la conversación</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { id: 'Assistant', label: 'Asistente General', icon: Bot, desc: 'Ayuda con tareas generales y preguntas variadas.' },
+              { id: 'Developer', label: 'Desarrollador Experto', icon: Code, desc: 'Especialista en código, arquitectura y debugging.' },
+              { id: 'Analyst', label: 'Analista de Datos', icon: Terminal, desc: 'Experto en análisis, estadísticas y patrones.' },
+              { id: 'Accountant', label: 'Contador', icon: User, desc: 'Asistencia en finanzas, impuestos y contabilidad.' },
+            ].map((role) => (
+              <button
+                key={role.id}
+                onClick={() => handleRoleSelect(role.id)}
+                className="flex items-start gap-4 p-6 rounded-xl bg-slate-800/50 border border-slate-700 hover:bg-slate-800 hover:border-blue-500/50 transition-all text-left group"
+              >
+                <div className="p-3 rounded-lg bg-slate-900 group-hover:bg-blue-500/10 group-hover:text-blue-400 transition-colors">
+                  <role.icon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg text-slate-200 group-hover:text-blue-400 transition-colors">
+                    {role.label}
+                  </h3>
+                  <p className="text-sm text-slate-400 mt-1">
+                    {role.desc}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-slate-900 text-slate-100">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-700 bg-slate-900/50 backdrop-blur">
         <div className="flex items-center gap-2">
           <Bot className="w-6 h-6 text-emerald-400" />
-          <h1 className="font-bold text-lg">LocalMind AI</h1>
+          <div className="flex flex-col">
+            <h1 className="font-bold text-lg leading-none">LocalMind AI</h1>
+            <span className="text-xs text-slate-400">Rol: {systemRole}</span>
+          </div>
         </div>
-        <select 
-          className="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
-          value={systemRole}
-          onChange={(e) => setSystemRole(e.target.value)}
-        >
-          <option value="Assistant">Asistente General</option>
-          <option value="Developer">Desarrollador Experto</option>
-          <option value="Analyst">Analista de Datos</option>
-          <option value="Accountant">Contador</option>
-        </select>
+        {/* Role selector removed from header */}
       </div>
 
       {/* Messages */}

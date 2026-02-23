@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('api', {
     return () => ipcRenderer.removeListener('update-progress', subscription);
   },
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
 
   // Registration
   checkRegistration: () => ipcRenderer.invoke('registration:check'),
