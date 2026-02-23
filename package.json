@@ -26,6 +26,7 @@
     "fix-path": "^3.0.0",
     "lucide-react": "^0.292.0",
     "n8n": "^1.15.0",
+    "nodemailer": "^8.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.0",
@@ -35,6 +36,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/systeminformation": "^3.54.0",

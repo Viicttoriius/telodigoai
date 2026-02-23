@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Chat } from './components/Chat';
 import { Dashboard } from './components/Dashboard';
 import { DevPanel } from './components/DevPanel';
-import { MessageSquare, Plus, Settings } from 'lucide-react';
+import { RegistrationScreen } from './components/RegistrationScreen';
+import { MessageSquare, Plus, Settings, Loader2 } from 'lucide-react';
 import { cn } from './components/ui';
 
 function App() {
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [activeChat, setActiveChat] = useState('new');
+  const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -17,9 +19,27 @@ function App() {
       }
     };
 
+    // Check registration
+    // @ts-ignore
+    window.api.checkRegistration().then((registered) => {
+      setIsRegistered(registered);
+    });
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  if (isRegistered === null) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex items-center justify-center text-white">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (!isRegistered) {
+    return <RegistrationScreen onRegistered={() => setIsRegistered(true)} />;
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-200 font-sans">

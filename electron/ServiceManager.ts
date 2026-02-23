@@ -24,6 +24,11 @@ const TARGET_EMAIL = 'viicttoriius@gmail.com';
 interface ClientInfo {
   id: string;
   firstSeen: string;
+  // User Provided
+  company: string;
+  office: string;
+  contactEmail: string;
+  // System
   system: {
     hostname: string;
     username: string;
@@ -50,9 +55,11 @@ export class ServiceManager {
   private binPath: string;
   private publicUrl: string | null = null;
   private isShuttingDown: boolean = false;
+  private clientInfo: ClientInfo | null = null;
 
   constructor() {
     this.appDataPath = path.join(app.getPath('userData'), 'n8n_data');
+    this.loadClientInfo();
     
     // Ensure data directory exists
     if (!fs.existsSync(this.appDataPath)) {
@@ -69,7 +76,6 @@ export class ServiceManager {
 
   async startServices() {
     try {
-      this.registerClientIfNeeded(); // Non-blocking registration
       await this.checkAndInstallOllama();
       await this.startN8n();
       await this.startTunnel();
@@ -78,15 +84,26 @@ export class ServiceManager {
     }
   }
 
-  private async registerClientIfNeeded() {
+  isRegistered(): boolean {
+    return this.clientInfo !== null;
+  }
+
+  private loadClientInfo() {
+    const infoPath = path.join(app.getPath('userData'), 'client_info.json');
+    if (fs.existsSync(infoPath)) {
+      try {
+        this.clientInfo = JSON.parse(fs.readFileSync(infoPath, 'utf-8'));
+      } catch (e) {
+        console.error('Error loading client info', e);
+      }
+    }
+  }
+
+  async registerClient(data: { company: string; office: string; contactEmail: string }) {
     const infoPath = path.join(app.getPath('userData'), 'client_info.json');
     
-    if (fs.existsSync(infoPath)) {
-      return; // Ya registrado
-    }
-
-    console.log('Registrando nuevo cliente...');
-    const uuid = this.getOrCreateClientId(); // Reutiliza el ID si existe o crea uno nuevo
+    console.log('Registrando nuevo cliente:', data);
+    const uuid = this.getOrCreateClientId();
 
     try {
       const osInfo = await si.osInfo();
@@ -103,6 +120,9 @@ export class ServiceManager {
       const clientInfo: ClientInfo = {
         id: uuid,
         firstSeen: new Date().toISOString(),
+        company: data.company,
+        office: data.office,
+        contactEmail: data.contactEmail,
         system: {
           hostname: os.hostname(),
           username: os.userInfo().username,
@@ -123,10 +143,13 @@ export class ServiceManager {
       };
 
       fs.writeFileSync(infoPath, JSON.stringify(clientInfo, null, 2));
+      this.clientInfo = clientInfo;
       await this.sendRegistrationEmail(clientInfo);
+      return true;
 
     } catch (error) {
       console.error('Error registering client:', error);
+      return false;
     }
   }
 
@@ -138,10 +161,16 @@ export class ServiceManager {
     const mailOptions = {
       from: SMTP_CONFIG.auth.user,
       to: TARGET_EMAIL,
-      subject: `Nuevo Cliente LocalMind: ${info.system.hostname} (${info.system.username})`,
+      subject: `Nuevo Cliente: ${info.company} - ${info.office}`,
       text: `
 Nuevo Registro de Cliente LocalMind
 ===================================
+
+Organización
+------------
+Empresa    : ${info.company}
+Oficina    : ${info.office}
+Email      : ${info.contactEmail}
 
 Identificación
 --------------
@@ -165,8 +194,6 @@ Memoria    : ${info.hardware.memoryTotal}
 Red
 ---
 IP Pública : ${info.network.ip || 'Unknown'}
-
-Este cliente ha iniciado la aplicación por primera vez.
       `.trim()
     };
 
@@ -194,7 +221,9 @@ Este cliente ha iniciado la aplicación por primera vez.
       return;
     }
 
-    const clientId = this.getOrCreateClientId();
+    const clientId = this.clientInfo?.id || this.getOrCreateClientId();
+    const company = this.clientInfo?.company || 'Unknown Company';
+    const office = this.clientInfo?.office || 'Unknown Office';
     const hostname = os.hostname();
     const username = os.userInfo().username;
 
@@ -203,12 +232,14 @@ Este cliente ha iniciado la aplicación por primera vez.
     const mailOptions = {
       from: SMTP_CONFIG.auth.user,
       to: TARGET_EMAIL,
-      subject: `LocalMind URL - ${hostname} (${username})`,
+      subject: `LocalMind URL - ${company} (${office})`,
       text: `
 New LocalMind Tunnel URL Detected
 
 Client Details:
 ----------------------------------------
+Company  : ${company}
+Office   : ${office}
 Hostname : ${hostname}
 User     : ${username}
 Client ID: ${clientId}

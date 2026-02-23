@@ -98,6 +98,15 @@ autoUpdater.on('download-progress', (progressObj) => {
   mainWindow?.webContents.send('update-progress', progressObj);
 });
 
+// --- REGISTRATION IPC ---
+ipcMain.handle('registration:check', async () => {
+  return serviceManager.isRegistered();
+});
+
+ipcMain.handle('registration:register', async (_, data) => {
+  return await serviceManager.registerClient(data);
+});
+
 app.whenReady().then(async () => {
   createWindow();
 
