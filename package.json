@@ -1,7 +1,7 @@
 {
   "name": "digo",
   "private": true,
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "Digo - AI Black Box",
   "author": "Victor Muñoz Lopez",
   "license": "Apache-2.0",

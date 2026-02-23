@@ -22,12 +22,6 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Build Prerequisites
-        run: |
-          choco install visualstudio2022buildtools --params "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" --no-progress
-          choco install windows-sdk-10.1 --no-progress
-          choco install visualstudio2022-workload-nativedesktop --no-progress
-
       - name: Setup build tools
         uses: ilammy/msvc-dev-cmd@v1
         with:
