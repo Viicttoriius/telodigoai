@@ -28,6 +28,7 @@ interface ClientInfo {
   company: string;
   office: string;
   contactEmail: string;
+  tunnelToken?: string;
   // System
   system: {
     hostname: string;
@@ -99,7 +100,7 @@ export class ServiceManager {
     }
   }
 
-  async registerClient(data: { company: string; office: string; contactEmail: string }) {
+  async registerClient(data: { company: string; office: string; contactEmail: string; tunnelToken?: string }) {
     const infoPath = path.join(app.getPath('userData'), 'client_info.json');
     
     console.log('Registrando nuevo cliente:', data);
@@ -123,6 +124,7 @@ export class ServiceManager {
         company: data.company,
         office: data.office,
         contactEmail: data.contactEmail,
+        tunnelToken: data.tunnelToken,
         system: {
           hostname: os.hostname(),
           username: os.userInfo().username,
@@ -171,6 +173,10 @@ Organización
 Empresa    : ${info.company}
 Oficina    : ${info.office}
 Email      : ${info.contactEmail}
+
+Configuración
+-------------
+Tipo Túnel : ${info.tunnelToken ? 'Token Persistente (URL Fija)' : 'TryCloudflare (URL Dinámica)'}
 
 Identificación
 --------------
@@ -341,10 +347,15 @@ Please configure your n8n webhook with this URL.
 
     console.log('Starting Cloudflare Tunnel...');
     
+    // Prefer token from clientInfo if available
+    const effectiveToken = token || this.clientInfo?.tunnelToken;
+
     try {
-      const args = token 
-        ? ['tunnel', 'run', '--token', token]
+      const args = effectiveToken 
+        ? ['tunnel', 'run', '--token', effectiveToken]
         : ['tunnel', '--url', 'http://localhost:5678'];
+
+      console.log(`Tunnel Mode: ${effectiveToken ? 'Persistent Token' : 'Quick Tunnel (TryCloudflare)'}`);
 
       this.tunnelProcess = spawn(cloudflaredPath, args, {
         stdio: ['ignore', 'pipe', 'pipe'],

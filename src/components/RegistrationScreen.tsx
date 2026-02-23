@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building, MapPin, Mail, Loader2 } from 'lucide-react';
+import { Building, MapPin, Mail, Loader2, Key } from 'lucide-react';
 
 interface RegistrationScreenProps {
   onRegistered: () => void;
@@ -9,7 +9,8 @@ export const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ onRegist
   const [formData, setFormData] = useState({
     company: '',
     office: '',
-    contactEmail: ''
+    contactEmail: '',
+    tunnelToken: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -94,6 +95,25 @@ export const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ onRegist
                 onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
               />
             </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-700">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Token de Cloudflare Tunnel (Avanzado)
+            </label>
+            <div className="relative">
+              <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="password"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Token eyJh..."
+                value={formData.tunnelToken}
+                onChange={(e) => setFormData({ ...formData, tunnelToken: e.target.value })}
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Deja esto vacío si quieres usar un túnel temporal gratuito.
+            </p>
           </div>
 
           {error && (
