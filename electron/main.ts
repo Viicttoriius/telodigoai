@@ -17,14 +17,33 @@ const serviceManager = new ServiceManager();
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow() {
+  const preloadPath = path.join(__dirname, 'preload.js');
+  console.log('Preload path:', preloadPath);
+  
+  // Verify preload exists
+  try {
+    const fs = require('fs');
+    if (fs.existsSync(preloadPath)) {
+      console.log('Preload file exists');
+    } else {
+      console.error('Preload file DOES NOT EXIST at path:', preloadPath);
+      // Try to find it in likely locations for debugging
+      console.log('Current __dirname:', __dirname);
+      console.log('Files in __dirname:', fs.readdirSync(__dirname));
+    }
+  } catch (e) {
+    console.error('Error checking preload:', e);
+  }
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: preloadPath,
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,
+      webSecurity: false // Temporary for debugging CORS/Network issues if any
     },
     titleBarStyle: 'hidden',
     titleBarOverlay: {

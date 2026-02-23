@@ -297,16 +297,21 @@ Please configure your n8n webhook with this URL.
 
     try {
       // Use ELECTRON_RUN_AS_NODE to execute the script using Electron's internal Node.js
-      const env = {
+      const n8nEnv = {
         ...process.env,
         ELECTRON_RUN_AS_NODE: '1',
         N8N_USER_MANAGEMENT_DISABLED: 'true',
         N8N_PORT: '5678',
         N8N_USER_FOLDER: this.appDataPath,
+        // Ensure we don't inherit electron specific env vars that might confuse n8n
+        ELECTRON_NO_ATTACH_CONSOLE: '1'
       };
 
+      console.log('Spawning n8n with path:', n8nPath);
+      console.log('n8n User Folder:', this.appDataPath);
+
       this.n8nProcess = spawn(process.execPath, [n8nPath, 'start'], {
-        env,
+        env: n8nEnv,
         stdio: ['ignore', 'pipe', 'pipe'], 
         windowsHide: true
       });
