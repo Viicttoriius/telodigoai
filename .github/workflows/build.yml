@@ -29,6 +29,7 @@ jobs:
 
       - name: Install Build Prerequisites
         run: |
+          choco install visualstudio2022buildtools --params "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --quiet" --no-progress
           choco install windows-sdk-10.1 --no-progress
           choco install visualstudio2022-workload-nativedesktop --no-progress
 
