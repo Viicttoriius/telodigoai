@@ -19,21 +19,27 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.995.0",
+    "@azure/storage-blob": "^12.31.0",
     "@langchain/core": "^1.1.27",
     "axios": "^1.6.0",
     "clsx": "^2.0.0",
     "electron-store": "^6.0.1",
     "electron-updater": "^6.1.7",
     "fix-path": "^3.0.0",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.292.0",
+    "mysql2": "^3.18.0",
     "n8n": "^1.15.0",
     "nodemailer": "^8.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.0",
     "remark-gfm": "^4.0.0",
+    "socks": "^2.8.7",
     "systeminformation": "^5.21.0",
-    "tailwind-merge": "^2.0.0"
+    "tailwind-merge": "^2.0.0",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
