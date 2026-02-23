@@ -1,7 +1,7 @@
 {
   "name": "digo",
   "private": true,
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "Digo - AI Black Box",
   "author": "Victor Muñoz Lopez",
   "license": "Apache-2.0",
@@ -114,8 +114,7 @@
       "installerHeaderIcon": "resources/icon.ico",
       "license": "LICENSE",
       "displayLanguageSelector": true,
-      "multiLanguageInstaller": true,
-      "displayInstallDetails": true
+      "multiLanguageInstaller": true
     }
   }
 }
