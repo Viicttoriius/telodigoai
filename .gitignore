@@ -1,0 +1,24 @@
+# Node.js
+node_modules/
+dist/
+dist-electron/
+dist_app/
+
+# Environment
+.env
+.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

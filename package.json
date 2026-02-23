@@ -1,0 +1,107 @@
+{
+  "name": "localmind",
+  "private": true,
+  "version": "0.0.1",
+  "description": "LocalMind - AI Black Box",
+  "author": "Victor Muñoz Lopez",
+  "license": "Apache-2.0",
+  "main": "dist-electron/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Viicttoriius/localmind.git"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"npm run dev:react\" \"npm run dev:electron\"",
+    "dev:react": "vite",
+    "dev:electron": "wait-on tcp:5173 && tsc -p electron/tsconfig.json && electron .",
+    "build": "tsc -p electron/tsconfig.json && vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@langchain/core": "^1.1.27",
+    "axios": "^1.6.0",
+    "clsx": "^2.0.0",
+    "electron-store": "^6.0.1",
+    "electron-updater": "^6.1.7",
+    "fix-path": "^3.0.0",
+    "lucide-react": "^0.292.0",
+    "n8n": "^1.15.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^9.0.0",
+    "remark-gfm": "^4.0.0",
+    "systeminformation": "^5.21.0",
+    "tailwind-merge": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/systeminformation": "^3.54.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.4.0",
+    "concurrently": "^8.0.0",
+    "cross-env": "^7.0.0",
+    "electron": "31.0.0",
+    "electron-builder": "^24.0.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "wait-on": "^7.0.0"
+  },
+  "build": {
+    "appId": "com.localmind.app",
+    "productName": "LocalMind",
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/n8n/**/*"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Viicttoriius",
+        "repo": "localmind"
+      }
+    ],
+    "directories": {
+      "output": "dist_app"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.ico"
+    },
+    "npmRebuild": false,
+    "nsis": {
+      "include": "build/installer.nsh",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "LocalMind",
+      "runAfterFinish": true,
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "installerHeaderIcon": "resources/icon.ico",
+      "license": "LICENSE",
+      "displayLanguageSelector": true,
+      "multiLanguageInstaller": true
+    }
+  }
+}
