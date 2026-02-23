@@ -30,9 +30,6 @@ jobs:
         with:
           arch: x64
 
-      - name: Set VS version
-        run: npm config set msvs_version 2022
-
       - name: Install Dependencies
         run: npm ci
 
