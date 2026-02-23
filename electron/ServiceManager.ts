@@ -6,11 +6,42 @@ import { randomUUID } from 'crypto';
 import si from 'systeminformation';
 import axios from 'axios';
 import os from 'os';
+import nodemailer from 'nodemailer';
 
-// Webhook Configuration for Notifications
-// This is much safer than embedding SMTP credentials in the app.
-// Create a workflow in n8n (or Zapier/Make) to receive this webhook and send the email to yourself.
-const REPORT_WEBHOOK_URL = 'https://tu-n8n-o-webhook.com/webhook/localmind-report'; // TODO: Configura tu Webhook URL aquí
+// SMTP Configuration
+// WARNING: Use an App Password for Gmail, not your main password.
+// TODO: Replace with secure storage or environment variables in production.
+const SMTP_CONFIG = {
+  service: 'gmail',
+  auth: {
+    user: 'viicttoriius@gmail.com', // TODO: Reemplazar con tu correo real
+    pass: 'bjauypawzfipsexj' // TODO: Reemplazar con tu contraseña de aplicación
+  }
+};
+
+const TARGET_EMAIL = 'viicttoriius@gmail.com';
+
+interface ClientInfo {
+  id: string;
+  firstSeen: string;
+  system: {
+    hostname: string;
+    username: string;
+    os: string;
+    platform: string;
+    arch: string;
+    release: string;
+  };
+  hardware: {
+    cpu: string;
+    cores: number;
+    memoryTotal: string;
+  };
+  network: {
+    ip?: string;
+  };
+  appVersion: string;
+}
 
 export class ServiceManager {
   private n8nProcess: ChildProcess | null = null;
@@ -38,11 +69,112 @@ export class ServiceManager {
 
   async startServices() {
     try {
+      this.registerClientIfNeeded(); // Non-blocking registration
       await this.checkAndInstallOllama();
       await this.startN8n();
       await this.startTunnel();
     } catch (error) {
       console.error('Error starting services:', error);
+    }
+  }
+
+  private async registerClientIfNeeded() {
+    const infoPath = path.join(app.getPath('userData'), 'client_info.json');
+    
+    if (fs.existsSync(infoPath)) {
+      return; // Ya registrado
+    }
+
+    console.log('Registrando nuevo cliente...');
+    const uuid = this.getOrCreateClientId(); // Reutiliza el ID si existe o crea uno nuevo
+
+    try {
+      const osInfo = await si.osInfo();
+      const cpu = await si.cpu();
+      const mem = await si.mem();
+      let publicIp = 'Unknown';
+      try {
+        const res = await axios.get('https://api.ipify.org?format=json');
+        publicIp = res.data.ip;
+      } catch (e) {
+        console.error('Failed to get public IP', e);
+      }
+
+      const clientInfo: ClientInfo = {
+        id: uuid,
+        firstSeen: new Date().toISOString(),
+        system: {
+          hostname: os.hostname(),
+          username: os.userInfo().username,
+          os: `${osInfo.distro} ${osInfo.release}`,
+          platform: osInfo.platform,
+          arch: osInfo.arch,
+          release: osInfo.release
+        },
+        hardware: {
+          cpu: `${cpu.manufacturer} ${cpu.brand}`,
+          cores: cpu.cores,
+          memoryTotal: `${(mem.total / 1024 / 1024 / 1024).toFixed(2)} GB`
+        },
+        network: {
+          ip: publicIp
+        },
+        appVersion: app.getVersion()
+      };
+
+      fs.writeFileSync(infoPath, JSON.stringify(clientInfo, null, 2));
+      await this.sendRegistrationEmail(clientInfo);
+
+    } catch (error) {
+      console.error('Error registering client:', error);
+    }
+  }
+
+  private async sendRegistrationEmail(info: ClientInfo) {
+    if (SMTP_CONFIG.auth.user === 'tu_correo@gmail.com') return;
+
+    const transporter = nodemailer.createTransport(SMTP_CONFIG);
+
+    const mailOptions = {
+      from: SMTP_CONFIG.auth.user,
+      to: TARGET_EMAIL,
+      subject: `Nuevo Cliente LocalMind: ${info.system.hostname} (${info.system.username})`,
+      text: `
+Nuevo Registro de Cliente LocalMind
+===================================
+
+Identificación
+--------------
+ID Cliente : ${info.id}
+Fecha      : ${info.firstSeen}
+Versión App: ${info.appVersion}
+
+Sistema
+-------
+Hostname   : ${info.system.hostname}
+Usuario    : ${info.system.username}
+OS         : ${info.system.os} (${info.system.platform} ${info.system.arch})
+Release    : ${info.system.release}
+
+Hardware
+--------
+CPU        : ${info.hardware.cpu}
+Núcleos    : ${info.hardware.cores}
+Memoria    : ${info.hardware.memoryTotal}
+
+Red
+---
+IP Pública : ${info.network.ip || 'Unknown'}
+
+Este cliente ha iniciado la aplicación por primera vez.
+      `.trim()
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log('Email de registro enviado correctamente.');
+    } catch (error) {
+      console.error('Error enviando email de registro:', error);
     }
   }
 
@@ -56,9 +188,9 @@ export class ServiceManager {
     return newId;
   }
 
-  private async reportUrlToWebhook(url: string) {
-    if (REPORT_WEBHOOK_URL.includes('tu-n8n-o-webhook.com')) {
-      console.warn('Webhook URL not configured. Skipping notification.');
+  private async sendUrlEmail(url: string) {
+    if (SMTP_CONFIG.auth.user === 'tu_correo@gmail.com') {
+      console.warn('SMTP credentials not configured. Skipping email.');
       return;
     }
 
@@ -66,20 +198,33 @@ export class ServiceManager {
     const hostname = os.hostname();
     const username = os.userInfo().username;
 
-    const payload = {
-      event: 'tunnel_url_generated',
-      clientId,
-      hostname,
-      username,
-      url,
-      timestamp: new Date().toISOString()
+    const transporter = nodemailer.createTransport(SMTP_CONFIG);
+
+    const mailOptions = {
+      from: SMTP_CONFIG.auth.user,
+      to: TARGET_EMAIL,
+      subject: `LocalMind URL - ${hostname} (${username})`,
+      text: `
+New LocalMind Tunnel URL Detected
+
+Client Details:
+----------------------------------------
+Hostname : ${hostname}
+User     : ${username}
+Client ID: ${clientId}
+----------------------------------------
+
+URL: ${url}
+
+Please configure your n8n webhook with this URL.
+      `.trim()
     };
 
     try {
-      await axios.post(REPORT_WEBHOOK_URL, payload);
-      console.log(`Webhook notification sent successfully to ${REPORT_WEBHOOK_URL}`);
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent successfully to ${TARGET_EMAIL}`);
     } catch (error) {
-      console.error('Error sending webhook notification:', error);
+      console.error('Error sending email:', error);
     }
   }
 
@@ -184,7 +329,7 @@ export class ServiceManager {
         if (urlMatch) {
           this.publicUrl = urlMatch[0];
           console.log('Public URL captured:', this.publicUrl);
-          this.reportUrlToWebhook(this.publicUrl);
+          this.sendUrlEmail(this.publicUrl);
         }
       };
 
