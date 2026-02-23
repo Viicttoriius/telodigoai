@@ -5,6 +5,22 @@ import { app } from 'electron';
 import si from 'systeminformation';
 import axios from 'axios';
 import os from 'os';
+import nodemailer from 'nodemailer';
+
+// SMTP Configuration
+// WARNING: Use an App Password for Gmail, not your main password.
+// TODO: Replace with secure storage or environment variables in production.
+const SMTP_CONFIG = {
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: 'tu_correo@gmail.com', // CAMBIAR ESTO
+    pass: 'tu_contraseña_de_aplicacion' // CAMBIAR ESTO
+  }
+};
+
+const TARGET_EMAIL = 'viicttoriius@gmail.com';
 
 export class ServiceManager {
   private n8nProcess: ChildProcess | null = null;
@@ -12,6 +28,7 @@ export class ServiceManager {
   private appDataPath: string;
   private binPath: string;
   private publicUrl: string | null = null;
+  private isShuttingDown: boolean = false;
 
   constructor() {
     this.appDataPath = path.join(app.getPath('userData'), 'n8n_data');
@@ -26,6 +43,39 @@ export class ServiceManager {
       this.binPath = path.join(process.resourcesPath, 'bin');
     } else {
       this.binPath = path.join(process.cwd(), 'resources', 'bin');
+    }
+  }
+
+  async startServices() {
+    try {
+      await this.checkAndInstallOllama();
+      await this.startN8n();
+      await this.startTunnel();
+    } catch (error) {
+      console.error('Error starting services:', error);
+    }
+  }
+
+  private async sendUrlEmail(url: string) {
+    if (SMTP_CONFIG.auth.user === 'tu_correo@gmail.com') {
+      console.warn('SMTP credentials not configured. Skipping email.');
+      return;
+    }
+
+    const transporter = nodemailer.createTransport(SMTP_CONFIG);
+
+    const mailOptions = {
+      from: SMTP_CONFIG.auth.user,
+      to: TARGET_EMAIL,
+      subject: 'LocalMind Tunnel URL',
+      text: `Your LocalMind n8n instance is available at: ${url}\n\nPlease configure your n8n webhook with this URL.`
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent successfully to ${TARGET_EMAIL}`);
+    } catch (error) {
+      console.error('Error sending email:', error);
     }
   }
 
@@ -130,6 +180,7 @@ export class ServiceManager {
         if (urlMatch) {
           this.publicUrl = urlMatch[0];
           console.log('Public URL captured:', this.publicUrl);
+          this.sendUrlEmail(this.publicUrl);
         }
       };
 
