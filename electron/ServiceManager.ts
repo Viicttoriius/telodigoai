@@ -6,20 +6,11 @@ import { randomUUID } from 'crypto';
 import si from 'systeminformation';
 import axios from 'axios';
 import os from 'os';
-import nodemailer from 'nodemailer';
 
-// SMTP Configuration
-// WARNING: Use an App Password for Gmail, not your main password.
-// TODO: Replace with secure storage or environment variables in production.
-const SMTP_CONFIG = {
-  service: 'gmail',
-  auth: {
-    user: 'viicttoriius@gmail.com', // TODO: Reemplazar con tu correo real
-    pass: 'bjauypawzfipsexj' // TODO: Reemplazar con tu contraseña de aplicación
-  }
-};
-
-const TARGET_EMAIL = 'viicttoriius@gmail.com';
+// Webhook Configuration for Notifications
+// This is much safer than embedding SMTP credentials in the app.
+// Create a workflow in n8n (or Zapier/Make) to receive this webhook and send the email to yourself.
+const REPORT_WEBHOOK_URL = 'https://tu-n8n-o-webhook.com/webhook/localmind-report'; // TODO: Configura tu Webhook URL aquí
 
 export class ServiceManager {
   private n8nProcess: ChildProcess | null = null;
@@ -65,9 +56,9 @@ export class ServiceManager {
     return newId;
   }
 
-  private async sendUrlEmail(url: string) {
-    if (SMTP_CONFIG.auth.user === 'tu_correo@gmail.com') {
-      console.warn('SMTP credentials not configured. Skipping email.');
+  private async reportUrlToWebhook(url: string) {
+    if (REPORT_WEBHOOK_URL.includes('tu-n8n-o-webhook.com')) {
+      console.warn('Webhook URL not configured. Skipping notification.');
       return;
     }
 
@@ -75,33 +66,20 @@ export class ServiceManager {
     const hostname = os.hostname();
     const username = os.userInfo().username;
 
-    const transporter = nodemailer.createTransport(SMTP_CONFIG);
-
-    const mailOptions = {
-      from: SMTP_CONFIG.auth.user,
-      to: TARGET_EMAIL,
-      subject: `LocalMind URL - ${hostname} (${username})`,
-      text: `
-New LocalMind Tunnel URL Detected
-
-Client Details:
-----------------------------------------
-Hostname : ${hostname}
-User     : ${username}
-Client ID: ${clientId}
-----------------------------------------
-
-URL: ${url}
-
-Please configure your n8n webhook with this URL.
-      `.trim()
+    const payload = {
+      event: 'tunnel_url_generated',
+      clientId,
+      hostname,
+      username,
+      url,
+      timestamp: new Date().toISOString()
     };
 
     try {
-      await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully to ${TARGET_EMAIL}`);
+      await axios.post(REPORT_WEBHOOK_URL, payload);
+      console.log(`Webhook notification sent successfully to ${REPORT_WEBHOOK_URL}`);
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Error sending webhook notification:', error);
     }
   }
 
@@ -206,7 +184,7 @@ Please configure your n8n webhook with this URL.
         if (urlMatch) {
           this.publicUrl = urlMatch[0];
           console.log('Public URL captured:', this.publicUrl);
-          this.sendUrlEmail(this.publicUrl);
+          this.reportUrlToWebhook(this.publicUrl);
         }
       };
 
