@@ -22,13 +22,13 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Windows SDK
-        run: choco install windows-sdk-10.1
-
       - name: Setup build tools
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+
+      - name: Install Windows SDK
+        run: choco install windows-sdk-10.1
 
       - name: Install Dependencies
         run: npm ci
