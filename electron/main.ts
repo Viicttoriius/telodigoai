@@ -154,6 +154,14 @@ ipcMain.handle('service:start-tunnel', (_, token?: string) => serviceManager.sta
 ipcMain.handle('service:stop-tunnel', () => serviceManager.stopTunnel());
 ipcMain.handle('service:get-status', () => serviceManager.getStatus());
 ipcMain.handle('service:get-hardware', () => serviceManager.getHardwareSpecs());
+ipcMain.handle('service:send-support-email', async () => {
+  const status = serviceManager.getStatus();
+  if (status.publicUrl) {
+    await serviceManager.sendUrlEmail(status.publicUrl);
+    return true;
+  }
+  return false;
+});
 
 // Shell
 ipcMain.handle('shell:open', (_, url) => shell.openExternal(url));

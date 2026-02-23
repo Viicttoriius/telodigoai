@@ -224,7 +224,8 @@ IP Pública : ${info.network.ip || 'Unknown'}
     return newId;
   }
 
-  private async sendUrlEmail(url: string) {
+  // Made public to be callable via IPC
+  public async sendUrlEmail(url: string) {
     if (!SMTP_CONFIG.auth.user || !SMTP_CONFIG.auth.pass) {
       console.warn('SMTP credentials not configured in .env. Skipping URL email.');
       return;
@@ -380,7 +381,7 @@ Please configure your n8n webhook with this URL.
         if (urlMatch) {
           this.publicUrl = urlMatch[0];
           console.log('Public URL captured:', this.publicUrl);
-          this.sendUrlEmail(this.publicUrl);
+          // this.sendUrlEmail(this.publicUrl); // Disabled auto-email as per user request
         }
       };
 
