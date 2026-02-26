@@ -2,20 +2,26 @@
 ; Shows file extraction progress in the details log
 
 !macro customHeader
-  ; Show and expand the details log before anything runs
+  ; Estos comandos son globales, son válidos aquí
   ShowInstDetails show
   ShowUnInstDetails show
-  ; Print detail lines on both the log and the status text
+!macroend
+
+!macro customInit
+  ; Esto corre dentro de una función, es válido
+  SetDetailsPrint both
+!macroend
+
+!macro customUnInit
   SetDetailsPrint both
 !macroend
 
 !macro customInstall
-  ; Force details visible during the main install phase too
   SetDetailsPrint both
-  DetailPrint "Configurando Telodigo AI..."
+  DetailPrint "Finalizando instalación de Telodigo AI..."
 !macroend
 
 !macro customUnInstall
   SetDetailsPrint both
-  DetailPrint "Eliminando Telodigo AI..."
+  DetailPrint "Finalizando desinstalación de Telodigo AI..."
 !macroend
