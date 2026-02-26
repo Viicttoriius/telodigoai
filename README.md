@@ -2,9 +2,9 @@
   <img src="resources/icon.svg" alt="Telodigo AI Logo" width="120" />
 </div>
 
-# Digo - AI Black Box
+# Telodigo AI - AI Black Box
 
-Digo es una solución "caja negra" de Inteligencia Artificial local, diseñada para operar sin necesidad de configuración compleja por parte del usuario final. Integra n8n para automatización de flujos y Ollama para ejecución de modelos de lenguaje (LLMs) directamente en el dispositivo.
+Telodigo AI es una solución "caja negra" de Inteligencia Artificial local, diseñada para operar sin necesidad de configuración compleja por parte del usuario final. Integra n8n para automatización de flujos y Ollama para ejecución de modelos de lenguaje (LLMs) directamente en el dispositivo.
 
 ## Características Principales
 
@@ -22,13 +22,13 @@ Digo es una solución "caja negra" de Inteligencia Artificial local, diseñada p
 
 ## Instalación
 
-1.  Descarga el instalador `.exe` de la sección de [Releases](https://github.com/Viicttoriius/digo/releases).
+1.  Descarga el instalador `.exe` de la sección de [Releases](https://github.com/Viicttoriius/telodigoai/releases).
 2.  Ejecuta el instalador.
 3.  La aplicación instalará y configurará automáticamente todos los componentes necesarios.
 
 ## Primer Inicio
 
-Al abrir Digo por primera vez:
+Al abrir Telodigo AI por primera vez:
 1.  La aplicación verificará si **Ollama** está instalado. Si no, lo descargará e instalará silenciosamente.
 2.  Analizará tu hardware (RAM y GPU) para determinar qué modelo de IA descargar.
 3.  Iniciará el servidor de **n8n** y creará un túnel de acceso.
