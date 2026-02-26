@@ -104,6 +104,12 @@ export class ServiceManager {
       let elapsed = 0;
 
       const check = () => {
+        if (!this.n8nProcess || this.n8nProcess.killed || this.n8nProcess.exitCode !== null) {
+          console.warn('[n8n] Process not running, aborting wait for public URL.');
+          resolve();
+          return;
+        }
+
         axios.get('http://localhost:5678/healthz', { timeout: 2000 })
           .then(() => {
             this.n8nReady = true;
@@ -395,14 +401,55 @@ export class ServiceManager {
     console.log('Spawning n8n with path:', n8nPath);
     console.log('n8n User Folder:', this.appDataPath);
 
-    this.n8nProcess = spawn(process.execPath, [n8nPath, 'start'], {
-      env: n8nEnv,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      windowsHide: true
-    });
+    // Determine executable to use
+    let execPath = process.execPath;
+    let spawnArgs = [n8nPath, 'start'];
+
+    // In development, process.execPath is Electron, which might have an older Node version
+    // incompatible with n8n. Try to use system node if available and we are in dev.
+    if (!app.isPackaged) {
+      try {
+        // Simple check if node is in PATH
+        exec('node -v', (error) => {
+          if (!error) {
+            console.log('[n8n] Development mode: Using system Node.js instead of Electron.');
+          }
+        });
+        // We assume node is in PATH for dev environments
+        execPath = 'node';
+        // When using 'node', we don't need some of the Electron-specific env vars to trick it,
+        // but keeping them doesn't hurt. However, we must ensure we aren't passing Electron flags.
+      } catch (e) {
+        console.warn('[n8n] Could not detect system Node.js, falling back to Electron executable.');
+      }
+    }
+
+    console.log('Process execPath:', execPath);
 
     try {
+      if (!fs.existsSync(n8nPath)) {
+        console.error(`[n8n] Executable not found at: ${n8nPath}`);
+        return false;
+      }
+
+      this.n8nProcess = spawn(execPath, spawnArgs, {
+        env: n8nEnv,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true
+      });
+
+      this.n8nProcess.on('error', (err) => {
+        console.error('[n8n] Failed to start process:', err);
+        this.n8nReady = false;
+      });
+
       const checkReady = () => {
+        // If process died, stop checking
+        if (!this.n8nProcess || this.n8nProcess.killed || this.n8nProcess.exitCode !== null) {
+           console.warn('[n8n] Process is dead, stopping health checks.');
+           return;
+        }
+
         axios.get('http://localhost:5678/healthz').then(() => {
           this.n8nReady = true;
           console.log('[n8n] Ready and healthy.');
