@@ -8,15 +8,15 @@
   "main": "dist-electron/main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Viicttoriius/telodigoai"
+    "url": "https://github.com/Viicttoriius/telodigoai.git"
   },
   "scripts": {
     "generate-secrets": "node scripts/generate-secrets.js",
+    "postinstall": "electron-builder install-app-deps",
     "dev": "concurrently -k \"npm run dev:react\" \"npm run dev:electron\"",
     "dev:react": "vite",
     "dev:electron": "npm run generate-secrets && wait-on tcp:5173 && tsc -p electron/tsconfig.json && electron .",
-    "rebuild": "electron-rebuild -f -w better-sqlite3",
-    "build": "npm run generate-secrets && tsc -p electron/tsconfig.json && vite build && npm run rebuild && electron-builder",
+    "build": "npm run generate-secrets && tsc -p electron/tsconfig.json && vite build && electron-builder",
     "preview": "vite preview"
   },
   "dependencies": {

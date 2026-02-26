@@ -20,18 +20,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Python (for node-gyp)
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Visual Studio Build Tools components
-        run: |
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --quiet" -y
-        shell: pwsh
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install -g npm@latest
+          npm install
         env:
           npm_config_msvs_version: '2022'
 
@@ -41,11 +36,6 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_TARGET: ${{ secrets.TARGET_EMAIL }}
-
-      - name: Rebuild native modules for Electron
-        run: npx electron-rebuild -f -w better-sqlite3
-        env:
-          npm_config_msvs_version: '2022'
 
       - name: Build TypeScript & Vite
         run: |
