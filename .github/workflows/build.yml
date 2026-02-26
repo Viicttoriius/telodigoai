@@ -24,7 +24,9 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          npm install @esbuild/win32-x64
         env:
           npm_config_msvs_version: '2022'
 

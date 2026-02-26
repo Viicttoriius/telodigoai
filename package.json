@@ -48,6 +48,7 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@esbuild/win32-x64": "0.21.5",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^20.0.0",
     "@types/nodemailer": "^7.0.11",
