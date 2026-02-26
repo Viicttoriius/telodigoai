@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="resources/icon.svg" alt="Telodigo AI Logo" width="120" />
+</div>
+
 # Digo - AI Black Box
 
 Digo es una solución "caja negra" de Inteligencia Artificial local, diseñada para operar sin necesidad de configuración compleja por parte del usuario final. Integra n8n para automatización de flujos y Ollama para ejecución de modelos de lenguaje (LLMs) directamente en el dispositivo.

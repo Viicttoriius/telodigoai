@@ -4,7 +4,7 @@ import { ServiceManager } from './ServiceManager';
 import Store from 'electron-store';
 import fixPath from 'fix-path';
 import { autoUpdater } from 'electron-updater';
-import type BetterSqlite3 from 'better-sqlite3';
+// Types bypassed to avoid module resolution errors
 
 // Fix PATH for GUI apps on macOS/Linux
 fixPath();
@@ -18,15 +18,15 @@ const serviceManager = new ServiceManager();
 let mainWindow: BrowserWindow | null = null;
 
 // ─── SQLite DB (via better-sqlite3, loaded lazily to survive asar) ───────────
-let db: BetterSqlite3.Database;
+let db: any;
 
 function initDb() {
   // better-sqlite3 must be required at runtime because it's a native addon
   // and lives in asarUnpack — not statically importable at module load time.
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const Database = require('better-sqlite3') as typeof BetterSqlite3;
+  const Database = require('better-sqlite3');
   const dbPath = path.join(app.getPath('userData'), 'telodigo.db');
-  db = new Database(dbPath, { verbose: (msg) => console.log('[DB]', msg) });
+  db = new Database(dbPath, { verbose: (msg: any) => console.log('[DB]', msg) });
   db.pragma('journal_mode = WAL');  // Better performance for concurrent reads
   db.pragma('foreign_keys = ON');
 

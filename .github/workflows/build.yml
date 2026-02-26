@@ -40,7 +40,7 @@ jobs:
         env:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          SMTP_TARGET: ${{ secrets.SMTP_TARGET }}
+          SMTP_TARGET: ${{ secrets.TARGET_EMAIL }}
 
       - name: Rebuild native modules for Electron
         run: npx electron-rebuild -f -w better-sqlite3
@@ -55,5 +55,5 @@ jobs:
       - name: Package with electron-builder
         run: npx electron-builder --win --publish always
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_msvs_version: '2022'
