@@ -446,8 +446,8 @@ export class ServiceManager {
       const checkReady = () => {
         // If process died, stop checking
         if (!this.n8nProcess || this.n8nProcess.killed || this.n8nProcess.exitCode !== null) {
-           console.warn('[n8n] Process is dead, stopping health checks.');
-           return;
+          console.warn('[n8n] Process is dead, stopping health checks.');
+          return;
         }
 
         axios.get('http://localhost:5678/healthz').then(() => {
