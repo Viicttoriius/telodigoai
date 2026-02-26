@@ -1,4 +1,1 @@
-!macro customHeader
-  ShowInstDetails show
-  AutoCloseWindow false
-!macroend
+; Empty - no custom NSIS macros needed

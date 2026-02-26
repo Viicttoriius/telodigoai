@@ -57,6 +57,7 @@ export class ServiceManager {
   private publicUrl: string | null = null;
   private isShuttingDown: boolean = false;
   private clientInfo: ClientInfo | null = null;
+  private n8nReady: boolean = false;
 
   constructor() {
     this.appDataPath = path.join(app.getPath('userData'), 'n8n_data');
@@ -157,58 +158,71 @@ export class ServiceManager {
 
   private async sendRegistrationEmail(info: ClientInfo) {
     if (!SMTP_CONFIG.auth.user || !SMTP_CONFIG.auth.pass) {
-      console.warn('SMTP credentials not configured in .env. Skipping registration email.');
+      console.warn('SMTP credentials not configured. Skipping registration email.');
       return;
     }
 
     const transporter = nodemailer.createTransport(SMTP_CONFIG);
+    const tunnelType = info.tunnelToken ? 'Token Persistente (URL Fija)' : 'TryCloudflare (URL Dinámica)';
 
-    const mailOptions = {
-      from: SMTP_CONFIG.auth.user,
-      to: TARGET_EMAIL,
-      subject: `Nuevo Cliente: ${info.company} - ${info.office}`,
-      text: `
-Nuevo Registro de Cliente LocalMind
-===================================
-
-Organización
-------------
-Empresa    : ${info.company}
-Oficina    : ${info.office}
-Email      : ${info.contactEmail}
-
-Configuración
--------------
-Tipo Túnel : ${info.tunnelToken ? 'Token Persistente (URL Fija)' : 'TryCloudflare (URL Dinámica)'}
-
-Identificación
---------------
-ID Cliente : ${info.id}
-Fecha      : ${info.firstSeen}
-Versión App: ${info.appVersion}
-
-Sistema
--------
-Hostname   : ${info.system.hostname}
-Usuario    : ${info.system.username}
-OS         : ${info.system.os} (${info.system.platform} ${info.system.arch})
-Release    : ${info.system.release}
-
-Hardware
---------
-CPU        : ${info.hardware.cpu}
-Núcleos    : ${info.hardware.cores}
-Memoria    : ${info.hardware.memoryTotal}
-
-Red
----
-IP Pública : ${info.network.ip || 'Unknown'}
-      `.trim()
-    };
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>
+  body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:0}
+  .wrap{max-width:600px;margin:32px auto;background:#1e293b;border-radius:12px;overflow:hidden;border:1px solid #334155}
+  .header{background:linear-gradient(135deg,#e63199,#be185d);padding:32px;text-align:center}
+  .header h1{margin:0;font-size:28px;color:#fff;letter-spacing:1px}  
+  .header p{margin:8px 0 0;color:rgba(255,255,255,.7);font-size:14px}
+  .body{padding:32px}
+  .section{margin-bottom:24px}
+  .section-title{font-size:11px;font-weight:700;color:#e63199;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #334155}
+  .row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid #1e293b}
+  .label{color:#94a3b8;min-width:140px}
+  .value{color:#f1f5f9;font-weight:500;text-align:right}
+  .badge{display:inline-block;background:#e63199;color:#fff;font-size:11px;padding:2px 10px;border-radius:20px;margin-left:8px}
+  .footer{background:#0f172a;padding:16px;text-align:center;font-size:12px;color:#475569}
+</style></head>
+<body><div class="wrap">
+  <div class="header">
+    <h1>🤖 Telodigo AI</h1>
+    <p>Nuevo Cliente Registrado</p>
+  </div>
+  <div class="body">
+    <div class="section">
+      <div class="section-title">Organización</div>
+      <div class="row"><span class="label">Empresa</span><span class="value">${info.company}</span></div>
+      <div class="row"><span class="label">Oficina</span><span class="value">${info.office}</span></div>
+      <div class="row"><span class="label">Email</span><span class="value">${info.contactEmail || '—'}</span></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Configuración</div>
+      <div class="row"><span class="label">Tipo de Túnel</span><span class="value">${tunnelType}</span></div>
+      <div class="row"><span class="label">ID Cliente</span><span class="value" style="font-family:monospace;font-size:12px">${info.id}</span></div>
+      <div class="row"><span class="label">Versión App</span><span class="value"><span class="badge">v${info.appVersion}</span></span></div>
+      <div class="row"><span class="label">Fecha Registro</span><span class="value">${new Date(info.firstSeen).toLocaleString('es-ES')}</span></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Sistema</div>
+      <div class="row"><span class="label">Hostname</span><span class="value">${info.system.hostname}</span></div>
+      <div class="row"><span class="label">Usuario</span><span class="value">${info.system.username}</span></div>
+      <div class="row"><span class="label">OS</span><span class="value">${info.system.os}</span></div>
+      <div class="row"><span class="label">CPU</span><span class="value">${info.hardware.cpu} (${info.hardware.cores} núcleos)</span></div>
+      <div class="row"><span class="label">Memoria</span><span class="value">${info.hardware.memoryTotal}</span></div>
+      <div class="row"><span class="label">IP Pública</span><span class="value" style="font-family:monospace">${info.network.ip || '—'}</span></div>
+    </div>
+  </div>
+  <div class="footer">Telodigo AI · Sistema de registro automático</div>
+</div></body></html>`;
 
     try {
-      await transporter.sendMail(mailOptions);
-      console.log('Email de registro enviado correctamente.');
+      await transporter.sendMail({
+        from: `"Telodigo AI" <${SMTP_CONFIG.auth.user}>`,
+        to: TARGET_EMAIL,
+        subject: `🆕 Nuevo Cliente: ${info.company} – ${info.office}`,
+        html,
+      });
+      console.log('Email de registro enviado.');
     } catch (error) {
       console.error('Error enviando email de registro:', error);
     }
@@ -227,7 +241,7 @@ IP Pública : ${info.network.ip || 'Unknown'}
   // Made public to be callable via IPC
   public async sendUrlEmail(url: string) {
     if (!SMTP_CONFIG.auth.user || !SMTP_CONFIG.auth.pass) {
-      console.warn('SMTP credentials not configured in .env. Skipping URL email.');
+      console.warn('SMTP credentials not configured. Skipping URL email.');
       return;
     }
 
@@ -239,33 +253,52 @@ IP Pública : ${info.network.ip || 'Unknown'}
 
     const transporter = nodemailer.createTransport(SMTP_CONFIG);
 
-    const mailOptions = {
-      from: SMTP_CONFIG.auth.user,
-      to: TARGET_EMAIL,
-      subject: `LocalMind URL - ${company} (${office})`,
-      text: `
-New LocalMind Tunnel URL Detected
-
-Client Details:
-----------------------------------------
-Company  : ${company}
-Office   : ${office}
-Hostname : ${hostname}
-User     : ${username}
-Client ID: ${clientId}
-----------------------------------------
-
-URL: ${url}
-
-Please configure your n8n webhook with this URL.
-      `.trim()
-    };
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><style>
+  body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:0}
+  .wrap{max-width:600px;margin:32px auto;background:#1e293b;border-radius:12px;overflow:hidden;border:1px solid #334155}
+  .header{background:linear-gradient(135deg,#e63199,#be185d);padding:32px;text-align:center}
+  .header h1{margin:0;font-size:26px;color:#fff}
+  .header p{margin:8px 0 0;color:rgba(255,255,255,.75);font-size:14px}
+  .body{padding:32px}
+  .url-box{background:#0f172a;border:1px solid #e63199;border-radius:8px;padding:16px;margin:20px 0;text-align:center}
+  .url-box a{color:#e63199;font-family:monospace;font-size:16px;font-weight:bold;word-break:break-all;text-decoration:none}
+  .section-title{font-size:11px;font-weight:700;color:#e63199;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #334155}
+  .row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
+  .label{color:#94a3b8}
+  .value{color:#f1f5f9;font-weight:500;font-family:monospace;font-size:13px}
+  .footer{background:#0f172a;padding:16px;text-align:center;font-size:12px;color:#475569}
+</style></head>
+<body><div class="wrap">
+  <div class="header">
+    <h1>🔗 Telodigo AI</h1>
+    <p>Nueva URL de Acceso Remoto Detectada</p>
+  </div>
+  <div class="body">
+    <p style="color:#94a3b8;font-size:14px;margin-top:0">Se ha generado una nueva URL pública para acceder al sistema n8n del cliente. Configura el webhook con esta dirección:</p>
+    <div class="url-box"><a href="${url}">${url}</a></div>
+    <div class="section-title" style="margin-top:24px">Detalles del Cliente</div>
+    <div class="row"><span class="label">Empresa</span><span class="value">${company}</span></div>
+    <div class="row"><span class="label">Oficina</span><span class="value">${office}</span></div>
+    <div class="row"><span class="label">Hostname</span><span class="value">${hostname}</span></div>
+    <div class="row"><span class="label">Usuario</span><span class="value">${username}</span></div>
+    <div class="row"><span class="label">ID</span><span class="value" style="font-size:11px">${clientId}</span></div>
+  </div>
+  <div class="footer">Telodigo AI · Notificación automática de túnel</div>
+</div></body></html>`;
 
     try {
-      await transporter.sendMail(mailOptions);
-      console.log(`Email sent successfully to ${TARGET_EMAIL}`);
+      await transporter.sendMail({
+        from: `"Telodigo AI" <${SMTP_CONFIG.auth.user}>`,
+        to: TARGET_EMAIL,
+        subject: `🔗 Nueva URL Tunnel: ${company} (${office})`,
+        html,
+      });
+      console.log(`Email de URL enviado a ${TARGET_EMAIL}`);
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Error sending URL email:', error);
     }
   }
 
@@ -316,18 +349,39 @@ Please configure your n8n webhook with this URL.
         windowsHide: true
       });
 
+      const checkReady = () => {
+        axios.get('http://localhost:5678/healthz').then(() => {
+          this.n8nReady = true;
+          console.log('[n8n] Ready and healthy.');
+        }).catch(() => {
+          setTimeout(checkReady, 3000);
+        });
+      };
+
       this.n8nProcess.stdout?.on('data', (data) => {
-        console.log(`[n8n] ${data}`);
+        const txt = data.toString();
+        console.log(`[n8n] ${txt}`);
+        if (txt.includes('Editor is now accessible') || txt.includes('n8n ready')) {
+          this.n8nReady = true;
+        }
       });
 
       this.n8nProcess.stderr?.on('data', (data) => {
-        console.error(`[n8n ERR] ${data}`);
+        const txt = data.toString();
+        console.error(`[n8n ERR] ${txt}`);
+        if (txt.includes('Editor is now accessible') || txt.includes('n8n ready')) {
+          this.n8nReady = true;
+        }
       });
 
       this.n8nProcess.on('exit', (code) => {
         console.log(`n8n exited with code ${code}`);
         this.n8nProcess = null;
+        this.n8nReady = false;
       });
+
+      // Start polling for n8n health
+      setTimeout(checkReady, 5000);
 
       return true;
     } catch (error) {
@@ -578,13 +632,34 @@ Please configure your n8n webhook with this URL.
     };
   }
 
+  // --- INSTALLED MODELS ---
+  async getInstalledModels(): Promise<{ name: string; size: number; modified_at: string }[]> {
+    try {
+      const res = await axios.get('http://localhost:11434/api/tags', { timeout: 3000 });
+      return (res.data?.models ?? []).map((m: any) => ({
+        name: m.name,
+        size: m.size,
+        modified_at: m.modified_at,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
   // --- SYSTEM STATUS ---
-  getStatus() {
+  async getStatus() {
+    // Real ollama check via HTTP
+    let ollamaOk = false;
+    try {
+      await axios.get('http://localhost:11434/', { timeout: 1500 });
+      ollamaOk = true;
+    } catch { /* not running */ }
+
     return {
-      n8n: !!this.n8nProcess,
+      n8n: this.n8nReady,
       tunnel: !!this.tunnelProcess,
       publicUrl: this.publicUrl,
-      ollama: true // Simplified, ideally check health endpoint
+      ollama: ollamaOk,
     };
   }
 }

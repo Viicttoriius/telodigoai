@@ -1,54 +1,59 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('api', {
-  // Config
+  // ── Config store ────────────────────────────────────────────────────────
   getStoreValue: (key: string) => ipcRenderer.invoke('store:get', key),
   setStoreValue: (key: string, value: any) => ipcRenderer.invoke('store:set', key, value),
 
-  // Actions
+  // ── Services ────────────────────────────────────────────────────────────
   startTunnel: (token?: string) => ipcRenderer.invoke('service:start-tunnel', token),
   stopTunnel: () => ipcRenderer.invoke('service:stop-tunnel'),
-
-  // Status
   getStatus: () => ipcRenderer.invoke('service:get-status'),
   getHardware: () => ipcRenderer.invoke('service:get-hardware'),
-
-  // Support email
   sendSupportEmail: () => ipcRenderer.invoke('service:send-support-email'),
 
-  // Events
-  onStatusUpdate: (callback: (status: any) => void) => {
-    const subscription = (_: any, value: any) => callback(value);
-    ipcRenderer.on('status-update', subscription);
-    return () => ipcRenderer.removeListener('status-update', subscription);
+  // ── Ollama ──────────────────────────────────────────────────────────────
+  pullOllamaModel: (model: string) => ipcRenderer.invoke('ollama:pull-model', model),
+  listOllamaModels: () => ipcRenderer.invoke('ollama:list-models'),
+  onOllamaPullProgress: (cb: (data: any) => void) => {
+    const sub = (_: any, v: any) => cb(v);
+    ipcRenderer.on('ollama-pull-progress', sub);
+    return () => ipcRenderer.removeListener('ollama-pull-progress', sub);
   },
 
-  // Shell
-  openExternal: (url: string) => ipcRenderer.invoke('shell:open', url),
+  // ── Chat sessions (SQLite) ───────────────────────────────────────────────
+  getChatSessions: () => ipcRenderer.invoke('chat:get-sessions'),
+  createChatSession: (session: any) => ipcRenderer.invoke('chat:create-session', session),
+  updateChatSessionPreview: (chatId: string, preview: string) => ipcRenderer.invoke('chat:update-preview', chatId, preview),
+  deleteChatSession: (chatId: string) => ipcRenderer.invoke('chat:delete-session', chatId),
+  getChatMessages: (chatId: string) => ipcRenderer.invoke('chat:get-messages', chatId),
+  saveChatMessage: (chatId: string, msg: any) => ipcRenderer.invoke('chat:save-message', chatId, msg),
 
-  // Auto Update
-  onUpdateStatus: (callback: (status: any) => void) => {
-    const subscription = (_: any, value: any) => callback(value);
-    ipcRenderer.on('update-status', subscription);
-    return () => ipcRenderer.removeListener('update-status', subscription);
+  // ── Status events ───────────────────────────────────────────────────────
+  onStatusUpdate: (cb: (status: any) => void) => {
+    const sub = (_: any, v: any) => cb(v);
+    ipcRenderer.on('status-update', sub);
+    return () => ipcRenderer.removeListener('status-update', sub);
   },
-  onUpdateProgress: (callback: (progress: any) => void) => {
-    const subscription = (_: any, value: any) => callback(value);
-    ipcRenderer.on('update-progress', subscription);
-    return () => ipcRenderer.removeListener('update-progress', subscription);
+
+  // ── Update events ───────────────────────────────────────────────────────
+  onUpdateStatus: (cb: (status: any) => void) => {
+    const sub = (_: any, v: any) => cb(v);
+    ipcRenderer.on('update-status', sub);
+    return () => ipcRenderer.removeListener('update-status', sub);
+  },
+  onUpdateProgress: (cb: (progress: any) => void) => {
+    const sub = (_: any, v: any) => cb(v);
+    ipcRenderer.on('update-progress', sub);
+    return () => ipcRenderer.removeListener('update-progress', sub);
   },
   checkForUpdates: () => ipcRenderer.invoke('update:check'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
 
-  // Registration
+  // ── Shell ───────────────────────────────────────────────────────────────
+  openExternal: (url: string) => ipcRenderer.invoke('shell:open', url),
+
+  // ── Registration ─────────────────────────────────────────────────────────
   checkRegistration: () => ipcRenderer.invoke('registration:check'),
   registerClient: (data: any) => ipcRenderer.invoke('registration:register', data),
-
-  // Ollama Model Management (Dev Panel)
-  pullOllamaModel: (model: string) => ipcRenderer.invoke('ollama:pull-model', model),
-  onOllamaPullProgress: (callback: (data: { model: string; status: string; percent: number; detail: string }) => void) => {
-    const subscription = (_: any, value: any) => callback(value);
-    ipcRenderer.on('ollama-pull-progress', subscription);
-    return () => ipcRenderer.removeListener('ollama-pull-progress', subscription);
-  },
 });
