@@ -163,16 +163,19 @@ app.whenReady().then(async () => {
   initDb();
   createWindow();
 
-  await serviceManager.startN8n();
-
-  const hardware = await serviceManager.getHardwareSpecs();
-  console.log('Hardware detected:', hardware);
-
-  serviceManager.checkAndInstallOllama().then((ollamaStatus) => {
+  // Start n8n first, wait until healthy, THEN start the tunnel.
+  // This prevents Cloudflare getting a 502 while n8n is still booting.
+  serviceManager.checkAndInstallOllama().then(async (ollamaStatus) => {
     if (ollamaStatus !== 'failed') {
+      const hardware = await serviceManager.getHardwareSpecs();
+      console.log('Hardware detected:', hardware);
       serviceManager.pullModel(hardware.recommendedModel);
     }
   });
+
+  // Sequential: n8n → healthy check → tunnel
+  await serviceManager.startN8n();
+  await serviceManager.waitForN8nPublic(); // waits up to 2 min for /healthz
 
   const savedToken = store.get('tunnel_token') as string;
   serviceManager.startTunnel(savedToken);

@@ -254,7 +254,7 @@ export function Chat({ chatId, onFirstMessage }: ChatProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-slate-700 bg-slate-900/50">
+      <div className="p-4 pb-10 border-t border-slate-700 bg-slate-900/50">
         <div className="flex gap-2 max-w-4xl mx-auto bg-slate-800 p-2 rounded-xl border border-slate-700 focus-within:ring-2 focus-within:ring-pink-500/50 transition-all">
           <button
             className="p-2 text-slate-400 hover:text-white transition-colors"

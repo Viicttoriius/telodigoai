@@ -80,10 +80,41 @@ export class ServiceManager {
     try {
       await this.checkAndInstallOllama();
       await this.startN8n();
+      // Wait until n8n is actually healthy before starting the tunnel
+      // so Cloudflare doesn't get a 502 on first probe
+      await this.waitForN8nPublic();
       await this.startTunnel();
     } catch (error) {
       console.error('Error starting services:', error);
     }
+  }
+
+  public waitForN8nPublic(): Promise<void> {
+    return new Promise((resolve) => {
+      const maxWait = 120_000; // 2 minutes max
+      const interval = 3_000;
+      let elapsed = 0;
+
+      const check = () => {
+        axios.get('http://localhost:5678/healthz', { timeout: 2000 })
+          .then(() => {
+            this.n8nReady = true;
+            console.log('[n8n] Healthy – starting tunnel now.');
+            resolve();
+          })
+          .catch(() => {
+            elapsed += interval;
+            if (elapsed >= maxWait) {
+              console.warn('[n8n] Timed out waiting for health check – starting tunnel anyway.');
+              resolve();
+            } else {
+              setTimeout(check, interval);
+            }
+          });
+      };
+
+      setTimeout(check, 5000); // give n8n 5 s head-start
+    });
   }
 
   isRegistered(): boolean {
@@ -240,6 +271,10 @@ export class ServiceManager {
 
   // Made public to be callable via IPC
   public async sendUrlEmail(url: string) {
+    if (!url) {
+      console.warn('sendUrlEmail called with empty URL – skipping.');
+      return;
+    }
     if (!SMTP_CONFIG.auth.user || !SMTP_CONFIG.auth.pass) {
       console.warn('SMTP credentials not configured. Skipping URL email.');
       return;
