@@ -10,6 +10,9 @@
     "type": "git",
     "url": "https://github.com/Viicttoriius/telodigoai.git"
   },
+  "overrides": {
+    "sqlite3": "^5.1.7"
+  },
   "scripts": {
     "generate-secrets": "node scripts/generate-secrets.js",
     "dev": "concurrently -k \"npm run dev:react\" \"npm run dev:electron\"",
@@ -52,6 +55,7 @@
     "@types/react-dom": "^18.2.0",
     "@types/systeminformation": "^3.54.0",
     "@vitejs/plugin-react": "^4.0.0",
+    "@vscode/sqlite3": "^5.1.7",
     "autoprefixer": "^10.4.0",
     "concurrently": "^8.0.0",
     "cross-env": "^7.0.0",

@@ -17,13 +17,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
-
-      - name: Install Visual Studio Build Tools & SDK
-        run: |
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --includeRecommended --quiet --norestart"
-        shell: pwsh
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
