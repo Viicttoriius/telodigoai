@@ -12,10 +12,15 @@ import { SMTP_SECRETS } from './secrets';
 // SMTP Configuration
 // Secrets are injected at build time via electron/secrets.ts
 const SMTP_CONFIG = {
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,          // SSL on port 465
   auth: {
     user: SMTP_SECRETS.user,
-    pass: SMTP_SECRETS.pass
+    pass: SMTP_SECRETS.pass   // This must be a Gmail App Password (16 chars)
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 };
 
@@ -193,7 +198,6 @@ export class ServiceManager {
       return;
     }
 
-    const transporter = nodemailer.createTransport(SMTP_CONFIG);
     const tunnelType = info.tunnelToken ? 'Token Persistente (URL Fija)' : 'TryCloudflare (URL Dinámica)';
 
     const html = `
@@ -247,15 +251,21 @@ export class ServiceManager {
 </div></body></html>`;
 
     try {
+      const transporter = nodemailer.createTransport(SMTP_CONFIG);
+      // Verify connection before sending
+      await transporter.verify();
+      console.log('[SMTP] Connection verified OK');
       await transporter.sendMail({
         from: `"Telodigo AI" <${SMTP_CONFIG.auth.user}>`,
         to: TARGET_EMAIL,
         subject: `🆕 Nuevo Cliente: ${info.company} – ${info.office}`,
         html,
       });
-      console.log('Email de registro enviado.');
-    } catch (error) {
-      console.error('Error enviando email de registro:', error);
+      console.log(`[SMTP] Email de registro enviado a ${TARGET_EMAIL}`);
+    } catch (error: any) {
+      console.error('[SMTP] Error enviando email de registro:', error?.message ?? error);
+      if (error?.code) console.error('[SMTP] Code:', error.code);
+      if (error?.response) console.error('[SMTP] Server response:', error.response);
     }
   }
 
@@ -285,8 +295,6 @@ export class ServiceManager {
     const office = this.clientInfo?.office || 'Unknown Office';
     const hostname = os.hostname();
     const username = os.userInfo().username;
-
-    const transporter = nodemailer.createTransport(SMTP_CONFIG);
 
     const html = `
 <!DOCTYPE html>
@@ -325,15 +333,19 @@ export class ServiceManager {
 </div></body></html>`;
 
     try {
+      const transporter = nodemailer.createTransport(SMTP_CONFIG);
+      await transporter.verify();
       await transporter.sendMail({
         from: `"Telodigo AI" <${SMTP_CONFIG.auth.user}>`,
         to: TARGET_EMAIL,
         subject: `🔗 Nueva URL Tunnel: ${company} (${office})`,
         html,
       });
-      console.log(`Email de URL enviado a ${TARGET_EMAIL}`);
-    } catch (error) {
-      console.error('Error sending URL email:', error);
+      console.log(`[SMTP] Email de URL enviado a ${TARGET_EMAIL}`);
+    } catch (error: any) {
+      console.error('[SMTP] Error sending URL email:', error?.message ?? error);
+      if (error?.code) console.error('[SMTP] Code:', error.code);
+      if (error?.response) console.error('[SMTP] Server response:', error.response);
     }
   }
 
@@ -363,27 +375,39 @@ export class ServiceManager {
       // N8N_ENCRYPTION_KEY: 'some-secure-key-generated-once' // Good practice for prod
     };
 
+    // n8n v1.x environment variables (N8N_USER_MANAGEMENT_DISABLED was removed)
+    const n8nEnv = {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      ELECTRON_NO_ATTACH_CONSOLE: '1',
+      // n8n 1.x correct variables
+      N8N_PORT: '5678',
+      N8N_HOST: 'localhost',
+      N8N_USER_FOLDER: this.appDataPath,
+      // Skip owner setup / user management prompts
+      N8N_SKIP_WEBHOOK_DEREGISTRATION_SHUTDOWN: 'true',
+      // Disable telemetry and external calls that slow down startup
+      N8N_DIAGNOSTICS_ENABLED: 'false',
+      N8N_HIRING_BANNER_ENABLED: 'false',
+      N8N_VERSION_NOTIFICATIONS_ENABLED: 'false',
+      // Use basic auth mode (no sign-up page)
+      N8N_BASIC_AUTH_ACTIVE: 'false',
+      // Skip setup wizard on first run
+      N8N_SKIP_SETUP: 'true',
+      // Allow owner to be auto-created (n8n 1.x)
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'false',
+    };
+
+    console.log('Spawning n8n with path:', n8nPath);
+    console.log('n8n User Folder:', this.appDataPath);
+
+    this.n8nProcess = spawn(process.execPath, [n8nPath, 'start'], {
+      env: n8nEnv,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+
     try {
-      // Use ELECTRON_RUN_AS_NODE to execute the script using Electron's internal Node.js
-      const n8nEnv = {
-        ...process.env,
-        ELECTRON_RUN_AS_NODE: '1',
-        N8N_USER_MANAGEMENT_DISABLED: 'true',
-        N8N_PORT: '5678',
-        N8N_USER_FOLDER: this.appDataPath,
-        // Ensure we don't inherit electron specific env vars that might confuse n8n
-        ELECTRON_NO_ATTACH_CONSOLE: '1'
-      };
-
-      console.log('Spawning n8n with path:', n8nPath);
-      console.log('n8n User Folder:', this.appDataPath);
-
-      this.n8nProcess = spawn(process.execPath, [n8nPath, 'start'], {
-        env: n8nEnv,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        windowsHide: true
-      });
-
       const checkReady = () => {
         axios.get('http://localhost:5678/healthz').then(() => {
           this.n8nReady = true;
@@ -396,15 +420,27 @@ export class ServiceManager {
       this.n8nProcess.stdout?.on('data', (data) => {
         const txt = data.toString();
         console.log(`[n8n] ${txt}`);
-        if (txt.includes('Editor is now accessible') || txt.includes('n8n ready')) {
+        // n8n 1.x uses 'Editor is now accessible' or 'Listening on'
+        if (
+          txt.includes('Editor is now accessible') ||
+          txt.includes('n8n ready') ||
+          txt.includes('Listening on') ||
+          txt.includes('is now running')
+        ) {
           this.n8nReady = true;
         }
       });
 
       this.n8nProcess.stderr?.on('data', (data) => {
         const txt = data.toString();
-        console.error(`[n8n ERR] ${txt}`);
-        if (txt.includes('Editor is now accessible') || txt.includes('n8n ready')) {
+        // n8n writes INFO logs to stderr too — not all are errors
+        console.log(`[n8n LOG] ${txt}`);
+        if (
+          txt.includes('Editor is now accessible') ||
+          txt.includes('n8n ready') ||
+          txt.includes('Listening on') ||
+          txt.includes('is now running')
+        ) {
           this.n8nReady = true;
         }
       });
