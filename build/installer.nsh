@@ -1,27 +1,30 @@
-; Telodigo AI - Custom NSIS installer hooks
-; Shows file extraction progress in the details log
+; Telodigo AI - Fuerza el log de extracción de archivos
 
 !macro customHeader
-  ; Estos comandos son globales, son válidos aquí
+  ; Obliga a que el botón "Show details" y la caja de texto aparezcan
   ShowInstDetails show
   ShowUnInstDetails show
 !macroend
 
-!macro customInit
-  ; Esto corre dentro de una función, es válido
+!macro preInit
+  ; Esto corre antes de que el instalador siquiera se dibuje
   SetDetailsPrint both
 !macroend
 
-!macro customUnInit
+!macro customInit
+  ; Reforzamos al iniciar la UI
   SetDetailsPrint both
+  DetailPrint "Iniciando instalador de Telodigo AI..."
 !macroend
 
 !macro customInstall
+  ; Este es el punto crítico: justo antes de mover archivos
+  ; Forzamos el modo 'both' para que cada comando 'File' se imprima
   SetDetailsPrint both
-  DetailPrint "Finalizando instalación de Telodigo AI..."
+  DetailPrint "Instalando n8n y Ollama (Extrayendo componentes)..."
 !macroend
 
 !macro customUnInstall
   SetDetailsPrint both
-  DetailPrint "Finalizando desinstalación de Telodigo AI..."
+  DetailPrint "Eliminando componentes locales..."
 !macroend

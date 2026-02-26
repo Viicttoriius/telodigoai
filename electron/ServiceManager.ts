@@ -73,6 +73,9 @@ export class ServiceManager {
       fs.mkdirSync(this.appDataPath, { recursive: true });
     }
 
+    // Check SMTP connection on startup to log any auth issues
+    this.checkSmtpConnection();
+
     // Determine binary path based on environment
     if (app.isPackaged) {
       this.binPath = path.join(process.resourcesPath, 'bin');
@@ -365,15 +368,6 @@ export class ServiceManager {
     } else {
       n8nPath = path.join(process.cwd(), 'node_modules', 'n8n', 'bin', 'n8n');
     }
-
-    // If direct binary doesn't exist, try resolving via node
-    const env = {
-      ...process.env,
-      N8N_USER_MANAGEMENT_DISABLED: 'true',
-      N8N_PORT: '5678',
-      N8N_USER_FOLDER: this.appDataPath,
-      // N8N_ENCRYPTION_KEY: 'some-secure-key-generated-once' // Good practice for prod
-    };
 
     // n8n v1.x environment variables (N8N_USER_MANAGEMENT_DISABLED was removed)
     const n8nEnv = {
@@ -732,5 +726,19 @@ export class ServiceManager {
       publicUrl: this.publicUrl,
       ollama: ollamaOk,
     };
+  }
+
+  private async checkSmtpConnection() {
+    if (!SMTP_CONFIG.auth.user || !SMTP_CONFIG.auth.pass) {
+      console.warn('[SMTP] No credentials configured.');
+      return;
+    }
+    try {
+      const transporter = nodemailer.createTransport(SMTP_CONFIG);
+      await transporter.verify();
+      console.log('[SMTP] Connectivity verified successfully on startup.');
+    } catch (error: any) {
+      console.error('[SMTP] FATAL: Connection failed on startup:', error?.message ?? error);
+    }
   }
 }
