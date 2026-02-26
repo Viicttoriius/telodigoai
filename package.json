@@ -1,8 +1,8 @@
 {
-  "name": "digo",
+  "name": "telodigo-ai",
   "private": true,
-  "version": "0.0.17",
-  "description": "Digo - AI Black Box",
+  "version": "0.1.0",
+  "description": "Telodigo AI - AI Black Box",
   "author": "Victor Muñoz Lopez",
   "license": "Apache-2.0",
   "main": "dist-electron/main.js",
@@ -67,8 +67,8 @@
     "wait-on": "^7.0.0"
   },
   "build": {
-    "appId": "com.digo.app",
-    "productName": "Digo",
+    "appId": "com.telodigo.app",
+    "productName": "Telodigo AI",
     "asar": true,
     "asarUnpack": [
       "**/node_modules/n8n/**/*"
@@ -110,7 +110,7 @@
       "deleteAppDataOnUninstall": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Digo",
+      "shortcutName": "Telodigo AI",
       "runAfterFinish": true,
       "installerIcon": "resources/icon.ico",
       "uninstallerIcon": "resources/icon.ico",

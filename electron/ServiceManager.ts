@@ -61,7 +61,7 @@ export class ServiceManager {
   constructor() {
     this.appDataPath = path.join(app.getPath('userData'), 'n8n_data');
     this.loadClientInfo();
-    
+
     // Ensure data directory exists
     if (!fs.existsSync(this.appDataPath)) {
       fs.mkdirSync(this.appDataPath, { recursive: true });
@@ -102,7 +102,7 @@ export class ServiceManager {
 
   async registerClient(data: { company: string; office: string; contactEmail: string; tunnelToken?: string }) {
     const infoPath = path.join(app.getPath('userData'), 'client_info.json');
-    
+
     console.log('Registrando nuevo cliente:', data);
     const uuid = this.getOrCreateClientId();
 
@@ -274,16 +274,16 @@ Please configure your n8n webhook with this URL.
     if (this.n8nProcess) return true;
 
     console.log('Starting n8n...');
-    
+
     // Locate n8n binary/script
     let n8nPath = '';
     if (app.isPackaged) {
-        // In a real scenario, you'd likely unpack node_modules or have a standalone n8n binary
-        // For this "black box" concept, we assume it's available in the unpacked resources or similar
-        // Fallback to trying to run it from the bundled node_modules if possible, or expect it in bin
-        n8nPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'n8n', 'bin', 'n8n');
+      // In a real scenario, you'd likely unpack node_modules or have a standalone n8n binary
+      // For this "black box" concept, we assume it's available in the unpacked resources or similar
+      // Fallback to trying to run it from the bundled node_modules if possible, or expect it in bin
+      n8nPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'n8n', 'bin', 'n8n');
     } else {
-        n8nPath = path.join(process.cwd(), 'node_modules', 'n8n', 'bin', 'n8n');
+      n8nPath = path.join(process.cwd(), 'node_modules', 'n8n', 'bin', 'n8n');
     }
 
     // If direct binary doesn't exist, try resolving via node
@@ -312,7 +312,7 @@ Please configure your n8n webhook with this URL.
 
       this.n8nProcess = spawn(process.execPath, [n8nPath, 'start'], {
         env: n8nEnv,
-        stdio: ['ignore', 'pipe', 'pipe'], 
+        stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true
       });
 
@@ -348,27 +348,33 @@ Please configure your n8n webhook with this URL.
     if (this.tunnelProcess) this.stopTunnel();
 
     const cloudflaredPath = path.join(this.binPath, 'cloudflared.exe');
-    
+
     if (!fs.existsSync(cloudflaredPath)) {
       console.error('Cloudflared binary not found at:', cloudflaredPath);
       return false;
     }
 
     console.log('Starting Cloudflare Tunnel...');
-    
+
     // Prefer token from clientInfo if available
     const effectiveToken = token || this.clientInfo?.tunnelToken;
 
     if (effectiveToken) {
-      this.publicUrl = "Túnel Persistente (Cloudflare)";
+      // With a persistent token the URL is defined in the Cloudflare dashboard
+      // We mark it so the status indicator shows the tunnel as active
+      this.publicUrl = 'Túnel Persistente (Cloudflare)';
     } else {
       this.publicUrl = null;
     }
 
     try {
-      const args = effectiveToken 
-        ? ['tunnel', 'run', '--token', effectiveToken]
-        : ['tunnel', '--url', 'http://localhost:5678'];
+      // IMPORTANT: The tunnel must point to the n8n port (5678).
+      // For persistent token tunnels the route is configured inside Cloudflare dashboard,
+      // so the local target is irrelevant here — cloudflared handles routing.
+      // For quick TryCloudflare tunnels we explicitly forward to n8n.
+      const args = effectiveToken
+        ? ['tunnel', '--no-autoupdate', 'run', '--token', effectiveToken]
+        : ['tunnel', '--no-autoupdate', '--url', 'http://localhost:5678'];
 
       console.log(`Tunnel Mode: ${effectiveToken ? 'Persistent Token' : 'Quick Tunnel (TryCloudflare)'}`);
 
@@ -380,26 +386,30 @@ Please configure your n8n webhook with this URL.
       const handleOutput = (data: Buffer) => {
         const output = data.toString();
         console.log(`[Tunnel] ${output}`);
-        
-        // Capture trycloudflare URL
+
+        // Capture trycloudflare URL from output
         const urlMatch = output.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
         if (urlMatch) {
           this.publicUrl = urlMatch[0];
           console.log('Public URL captured:', this.publicUrl);
-          // this.sendUrlEmail(this.publicUrl); // Disabled auto-email as per user request
+        }
+
+        // Detect tunnel ready with persistent token
+        if (effectiveToken && output.includes('Registered tunnel connection')) {
+          console.log('[Tunnel] Persistent tunnel is connected.');
         }
       };
 
       this.tunnelProcess.stdout?.on('data', handleOutput);
-      this.tunnelProcess.stderr?.on('data', handleOutput); // Cloudflare often outputs to stderr
+      this.tunnelProcess.stderr?.on('data', handleOutput); // cloudflared logs to stderr
 
       this.tunnelProcess.on('exit', (code) => {
         console.log(`Tunnel exited with code ${code}`);
         this.tunnelProcess = null;
-        this.publicUrl = null;
+        if (!effectiveToken) this.publicUrl = null;
 
-        // Retry logic for temporary tunnels if exit code is non-zero
-        if (code !== 0 && !token) {
+        // Retry for temporary tunnels only
+        if (code !== 0 && !effectiveToken) {
           console.log('Tunnel failed. Retrying in 5 seconds...');
           setTimeout(() => {
             this.startTunnel(token);
@@ -480,11 +490,82 @@ Please configure your n8n webhook with this URL.
     });
   }
 
+  /**
+   * Pull a model and stream progress via callback.
+   * Parses the JSON lines that `ollama pull` outputs.
+   */
+  async pullModelWithProgress(
+    model: string,
+    onProgress: (data: { model: string; status: string; percent: number; detail: string }) => void
+  ): Promise<boolean> {
+    console.log(`[Dev] Pulling model with progress: ${model}`);
+
+    return new Promise((resolve) => {
+      const proc = spawn('ollama', ['pull', model], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true,
+      });
+
+      let buffer = '';
+
+      const processLine = (line: string) => {
+        if (!line.trim()) return;
+        try {
+          const json = JSON.parse(line);
+          // Ollama outputs JSON lines like:
+          // {"status":"pulling manifest"}
+          // {"status":"downloading","digest":"...","total":4000000,"completed":1200000}
+          // {"status":"success"}
+          const total = json.total || 0;
+          const completed = json.completed || 0;
+          const percent = total > 0 ? (completed / total) * 100 : 0;
+          const status = json.status === 'success' ? 'done' : 'downloading';
+          onProgress({
+            model,
+            status,
+            percent,
+            detail: json.status || 'Descargando...',
+          });
+        } catch {
+          // Not JSON — plain text line
+          onProgress({ model, status: 'downloading', percent: 0, detail: line.trim() });
+        }
+      };
+
+      const handleData = (data: Buffer) => {
+        buffer += data.toString();
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        lines.forEach(processLine);
+      };
+
+      proc.stdout?.on('data', handleData);
+      proc.stderr?.on('data', handleData);
+
+      proc.on('close', (code) => {
+        if (buffer.trim()) processLine(buffer);
+        if (code === 0) {
+          onProgress({ model, status: 'done', percent: 100, detail: '¡Modelo descargado correctamente!' });
+          resolve(true);
+        } else {
+          onProgress({ model, status: 'error', percent: 0, detail: `Error al descargar (código ${code})` });
+          resolve(false);
+        }
+      });
+
+      proc.on('error', (err) => {
+        console.error(`Error running ollama pull ${model}:`, err);
+        onProgress({ model, status: 'error', percent: 0, detail: 'Ollama no encontrado o no está corriendo.' });
+        resolve(false);
+      });
+    });
+  }
+
   // --- HARDWARE DETECTION ---
   async getHardwareSpecs() {
     const mem = await si.mem();
     const graphics = await si.graphics();
-    
+
     const totalRamGB = mem.total / (1024 * 1024 * 1024);
     const hasNvidia = graphics.controllers.some(c => c.vendor.toLowerCase().includes('nvidia'));
     const vram = graphics.controllers.reduce((acc, c) => acc + (c.vram || 0), 0); // VRAM in MB usually

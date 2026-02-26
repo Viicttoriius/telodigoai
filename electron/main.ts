@@ -19,7 +19,7 @@ let mainWindow: BrowserWindow | null = null;
 function createWindow() {
   const preloadPath = path.join(__dirname, 'preload.js');
   console.log('Preload path:', preloadPath);
-  
+
   // Verify preload exists
   try {
     const fs = require('fs');
@@ -123,11 +123,11 @@ app.whenReady().then(async () => {
 
   // Initialize Services
   await serviceManager.startN8n();
-  
+
   // Check Hardware & Ollama
   const hardware = await serviceManager.getHardwareSpecs();
   console.log('Hardware detected:', hardware);
-  
+
   // Run Ollama setup in background to not block UI
   serviceManager.checkAndInstallOllama().then((ollamaStatus) => {
     if (ollamaStatus !== 'failed') {
@@ -172,6 +172,13 @@ ipcMain.handle('service:send-support-email', async () => {
     return true;
   }
   return false;
+});
+
+// Ollama Model Pull with realtime progress
+ipcMain.handle('ollama:pull-model', async (_, model: string) => {
+  return serviceManager.pullModelWithProgress(model, (data) => {
+    mainWindow?.webContents.send('ollama-pull-progress', data);
+  });
 });
 
 // Shell

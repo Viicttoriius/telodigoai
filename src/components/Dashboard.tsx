@@ -20,10 +20,10 @@ export function Dashboard() {
 
   const sendSupportEmail = async () => {
     if (!status.publicUrl || sendingEmail) return;
-    
+
     setSendingEmail(true);
     try {
-      await (window as any).ipcRenderer.invoke('service:send-support-email');
+      await (window as any).api.sendSupportEmail();
       setEmailSent(true);
       setTimeout(() => setEmailSent(false), 3000);
     } catch (e) {
@@ -79,10 +79,10 @@ export function Dashboard() {
         <StatusIndicator active={status.n8n} label="CORE (n8n)" />
         <StatusIndicator active={status.tunnel} label="TUNNEL" />
         <StatusIndicator active={status.ollama} label="AI MODEL" />
-        
+
         {status.publicUrl && (
           <>
-            <div 
+            <div
               className="flex items-center gap-2 px-2 py-0.5 rounded bg-blue-900/30 border border-blue-800 cursor-pointer hover:bg-blue-900/50 transition-colors group"
               onClick={copyUrl}
               title="Click to copy remote access URL"
@@ -97,7 +97,7 @@ export function Dashboard() {
               disabled={sendingEmail || emailSent}
               className={cn(
                 "flex items-center gap-2 px-2 py-0.5 rounded border transition-colors",
-                emailSent 
+                emailSent
                   ? "bg-emerald-900/30 border-emerald-800 text-emerald-400"
                   : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white"
               )}
@@ -128,7 +128,7 @@ export function Dashboard() {
           </div>
         )}
         {updateStatus === 'ready' && (
-          <button 
+          <button
             className="flex items-center gap-2 px-2 py-0.5 rounded bg-emerald-900/30 border border-emerald-800 text-emerald-400 hover:bg-emerald-900/50 hover:text-emerald-300 transition-colors cursor-pointer animate-pulse"
             onClick={() => (window as any).api.installUpdate()}
           >
@@ -137,7 +137,7 @@ export function Dashboard() {
           </button>
         )}
       </div>
-      
+
       {hardware && (
         <div className="flex items-center gap-4 text-slate-500">
           <div className="flex items-center gap-1">
