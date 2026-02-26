@@ -1,46 +1,59 @@
-name: Build and Release
+name: Build & Release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
 
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'npm'
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v2
+      - name: Install Python (for node-gyp)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Install Dependencies
+      - name: Install Visual Studio Build Tools components
         run: |
-          npm install -g node-gyp
-          npm ci
-        env:
-          npm_config_msvs_version: 2022
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --quiet" -y
+        shell: pwsh
 
-      - name: Create .env file from Secrets
-        shell: bash
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        env:
+          npm_config_msvs_version: '2022'
+
+      - name: Generate secrets
+        run: node scripts/generate-secrets.js
+        env:
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_TARGET: ${{ secrets.SMTP_TARGET }}
+
+      - name: Rebuild native modules for Electron
+        run: npx electron-rebuild -f -w better-sqlite3
+        env:
+          npm_config_msvs_version: '2022'
+
+      - name: Build TypeScript & Vite
         run: |
-          echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> .env
-          echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> .env
-          echo "TARGET_EMAIL=${{ secrets.TARGET_EMAIL }}" >> .env
-          echo ".env file created with secrets"
+          npx tsc -p electron/tsconfig.json
+          npx vite build
 
-      - name: Build and Publish
+      - name: Package with electron-builder
+        run: npx electron-builder --win --publish always
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          npm_config_msvs_version: '2022'

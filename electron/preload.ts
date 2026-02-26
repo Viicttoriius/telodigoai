@@ -21,13 +21,24 @@ contextBridge.exposeInMainWorld('api', {
     return () => ipcRenderer.removeListener('ollama-pull-progress', sub);
   },
 
-  // ── Chat sessions (SQLite) ───────────────────────────────────────────────
+  // ── Chat Sessions ────────────────────────────────────────────────────────
   getChatSessions: () => ipcRenderer.invoke('chat:get-sessions'),
   createChatSession: (session: any) => ipcRenderer.invoke('chat:create-session', session),
   updateChatSessionPreview: (chatId: string, preview: string) => ipcRenderer.invoke('chat:update-preview', chatId, preview),
   deleteChatSession: (chatId: string) => ipcRenderer.invoke('chat:delete-session', chatId),
+
+  // ── Chat Messages ────────────────────────────────────────────────────────
   getChatMessages: (chatId: string) => ipcRenderer.invoke('chat:get-messages', chatId),
   saveChatMessage: (chatId: string, msg: any) => ipcRenderer.invoke('chat:save-message', chatId, msg),
+
+  // ── AI Memory ───────────────────────────────────────────────────────────
+  getMemory: (sessionId?: string) => ipcRenderer.invoke('memory:get', sessionId),
+  setMemory: (key: string, value: string, sessionId?: string) => ipcRenderer.invoke('memory:set', key, value, sessionId),
+  clearMemory: (sessionId?: string) => ipcRenderer.invoke('memory:clear', sessionId),
+
+  // ── Automations ─────────────────────────────────────────────────────────
+  listAutomations: () => ipcRenderer.invoke('automations:list'),
+  logAutomationRun: (id: string, status: 'ok' | 'error', result?: string) => ipcRenderer.invoke('automations:log-run', id, status, result),
 
   // ── Status events ───────────────────────────────────────────────────────
   onStatusUpdate: (cb: (status: any) => void) => {
