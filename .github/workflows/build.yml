@@ -25,6 +25,11 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Update npm and node-gyp setup
+        run: |
+          npm install -g npm@10.9.0
+          npm install -g node-gyp@latest
+
       - name: Install dependencies
         run: |
           npm install --legacy-peer-deps
@@ -43,6 +48,11 @@ jobs:
         run: |
           npx tsc -p electron/tsconfig.json
           npx vite build
+
+      - name: Rebuild native modules for Electron ABI
+        run: npx @electron/rebuild -f -w sqlite3,better-sqlite3
+        env:
+          npm_config_msvs_version: '2022'
 
       - name: Package with electron-builder
         run: npx electron-builder --win --publish always
