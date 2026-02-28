@@ -1,7 +1,7 @@
 {
   "name": "telodigo-ai",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Telodigo AI - AI Black Box",
   "author": "Victor Muñoz Lopez",
   "license": "Apache-2.0",
