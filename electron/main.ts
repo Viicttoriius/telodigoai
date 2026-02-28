@@ -9,12 +9,8 @@ import { autoUpdater } from 'electron-updater';
 // Fix PATH for GUI apps on macOS/Linux
 fixPath();
 
-// Auto Update
-autoUpdater.autoDownload = true;
-autoUpdater.autoInstallOnAppQuit = true;
-
-const store = new Store();
-const serviceManager = new ServiceManager();
+let store!: Store;
+let serviceManager!: ServiceManager;
 let mainWindow: BrowserWindow | null = null;
 
 // ─── SQLite DB (via better-sqlite3, loaded lazily to survive asar) ───────────
@@ -132,34 +128,40 @@ function createWindow() {
   }, 2000);
 }
 
-// ─── Auto Updater events ─────────────────────────────────────────────────────
-autoUpdater.on('update-available', () =>
-  mainWindow?.webContents.send('update-status', { status: 'available' })
-);
-autoUpdater.on('update-not-available', () =>
-  mainWindow?.webContents.send('update-status', { status: 'uptodate' })
-);
-autoUpdater.on('update-downloaded', () => {
-  mainWindow?.webContents.send('update-status', { status: 'ready' });
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Actualización lista',
-    message: 'La nueva versión de Telodigo AI está descargada. ¿Reiniciar ahora para aplicar los cambios?',
-    buttons: ['Reiniciar ahora', 'Más tarde'],
-  }).then(({ response }) => {
-    if (response === 0) autoUpdater.quitAndInstall(false, true);
-  });
-});
-autoUpdater.on('error', (err) => {
-  console.error('Update error:', err);
-  mainWindow?.webContents.send('update-status', { status: 'error', error: err.message });
-});
-autoUpdater.on('download-progress', (p) =>
-  mainWindow?.webContents.send('update-progress', p)
-);
-
 // ─── App Ready ───────────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
+  store = new Store();
+  serviceManager = new ServiceManager();
+  // Auto Update initialization
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  // ─── Auto Updater events ─────────────────────────────────────────────────────
+  autoUpdater.on('update-available', () =>
+    mainWindow?.webContents.send('update-status', { status: 'available' })
+  );
+  autoUpdater.on('update-not-available', () =>
+    mainWindow?.webContents.send('update-status', { status: 'uptodate' })
+  );
+  autoUpdater.on('update-downloaded', () => {
+    mainWindow?.webContents.send('update-status', { status: 'ready' });
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Actualización lista',
+      message: 'La nueva versión de Telodigo AI está descargada. ¿Reiniciar ahora para aplicar los cambios?',
+      buttons: ['Reiniciar ahora', 'Más tarde'],
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall(false, true);
+    });
+  });
+  autoUpdater.on('error', (err) => {
+    console.error('Update error:', err);
+    mainWindow?.webContents.send('update-status', { status: 'error', error: err.message });
+  });
+  autoUpdater.on('download-progress', (p) =>
+    mainWindow?.webContents.send('update-progress', p)
+  );
+
   initDb();
   createWindow();
 

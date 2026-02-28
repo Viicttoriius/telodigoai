@@ -14,7 +14,7 @@
     "generate-secrets": "node scripts/generate-secrets.js",
     "dev": "concurrently -k \"npm run dev:react\" \"npm run dev:electron\"",
     "dev:react": "vite",
-    "dev:electron": "npm run generate-secrets && wait-on tcp:5173 && tsc -p electron/tsconfig.json && electron .",
+    "dev:electron": "npm run generate-secrets && wait-on tcp:5173 && tsc -p electron/tsconfig.json && node scripts/dev-electron.js",
     "build": "npm run generate-secrets && tsc -p electron/tsconfig.json && vite build && electron-builder",
     "preview": "vite preview"
   },
@@ -73,7 +73,8 @@
     "asar": true,
     "asarUnpack": [
       "**/node_modules/n8n/**/*",
-      "**/node_modules/better-sqlite3/**/*"
+      "**/node_modules/better-sqlite3/**/*",
+      "**/node_modules/sqlite3/**/*"
     ],
     "publish": [
       {
@@ -103,7 +104,7 @@
       "target": "nsis",
       "icon": "resources/icon.ico"
     },
-    "npmRebuild": true,
+    "npmRebuild": false,
     "nsis": {
       "include": "build/installer.nsh",
       "oneClick": false,
