@@ -437,19 +437,11 @@ export class ServiceManager {
         return false;
       }
 
-      if (app.isPackaged) {
-        const { utilityProcess } = require('electron');
-        this.n8nProcess = utilityProcess.fork(n8nPath, ['start'], {
-          env: n8nEnv,
-          stdio: 'pipe'
-        });
-      } else {
-        this.n8nProcess = spawn(execPath, spawnArgs, {
-          env: n8nEnv,
-          stdio: ['ignore', 'pipe', 'pipe'],
-          windowsHide: true
-        });
-      }
+      this.n8nProcess = spawn(execPath, spawnArgs, {
+        env: n8nEnv,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true
+      });
 
       this.n8nProcess!.on('error', (err: any) => {
         console.error('[n8n] Failed to start process:', err);

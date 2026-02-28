@@ -5,9 +5,9 @@ const dotenv = require('dotenv');
 // Load .env from root
 const envPath = path.join(__dirname, '../.env');
 if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
+  dotenv.config({ path: envPath });
 } else {
-    console.warn('.env file not found, secrets will be empty');
+  console.warn('.env file not found, secrets will be empty');
 }
 
 const targetPath = path.join(__dirname, '../electron/secrets.ts');
@@ -20,7 +20,7 @@ const content = `
 export const SMTP_SECRETS = {
   user: '${process.env.SMTP_USER || ""}',
   pass: '${process.env.SMTP_PASS || ""}',
-  targetEmail: '${process.env.TARGET_EMAIL || ""}'
+  targetEmail: '${process.env.TARGET_EMAIL || process.env.SMTP_TARGET || ""}'
 };
 `;
 
