@@ -104,7 +104,11 @@ export class ServiceManager {
       let elapsed = 0;
 
       const check = () => {
-        if (!this.n8nProcess || this.n8nProcess.killed || this.n8nProcess.exitCode !== null) {
+        const isProcessDead = !this.n8nProcess ||
+          ('killed' in this.n8nProcess && this.n8nProcess.killed) ||
+          ('exitCode' in this.n8nProcess && this.n8nProcess.exitCode !== null);
+
+        if (isProcessDead) {
           console.warn('[n8n] Process not running, aborting wait for public URL.');
           resolve();
           return;
@@ -370,7 +374,8 @@ export class ServiceManager {
       // In a real scenario, you'd likely unpack node_modules or have a standalone n8n binary
       // For this "black box" concept, we assume it's available in the unpacked resources or similar
       // Fallback to trying to run it from the bundled node_modules if possible, or expect it in bin
-      n8nPath = path.join(process.resourcesPath, 'app', 'node_modules', 'n8n', 'bin', 'n8n');
+      // We're pointing straight to the ASAR archive!
+      n8nPath = path.join(process.resourcesPath, 'app.asar', 'node_modules', 'n8n', 'bin', 'n8n');
     } else {
       n8nPath = path.join(process.cwd(), 'node_modules', 'n8n', 'bin', 'n8n');
     }
@@ -427,25 +432,33 @@ export class ServiceManager {
     console.log('Process execPath:', execPath);
 
     try {
-      if (!fs.existsSync(n8nPath)) {
+      if (!fs.existsSync(n8nPath) && !app.isPackaged) {
         console.error(`[n8n] Executable not found at: ${n8nPath}`);
         return false;
       }
 
-      this.n8nProcess = spawn(execPath, spawnArgs, {
-        env: n8nEnv,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        windowsHide: true
-      });
+      if (app.isPackaged) {
+        const { utilityProcess } = require('electron');
+        this.n8nProcess = utilityProcess.fork(n8nPath, ['start'], {
+          env: n8nEnv,
+          stdio: 'pipe'
+        });
+      } else {
+        this.n8nProcess = spawn(execPath, spawnArgs, {
+          env: n8nEnv,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          windowsHide: true
+        });
+      }
 
-      this.n8nProcess.on('error', (err) => {
+      this.n8nProcess!.on('error', (err: any) => {
         console.error('[n8n] Failed to start process:', err);
         this.n8nReady = false;
       });
 
       const checkReady = () => {
-        // If process died, stop checking
-        if (!this.n8nProcess || this.n8nProcess.killed || this.n8nProcess.exitCode !== null) {
+        // Stop checking if process exited and we nullified the reference
+        if (!this.n8nProcess) {
           console.warn('[n8n] Process is dead, stopping health checks.');
           return;
         }
@@ -458,7 +471,7 @@ export class ServiceManager {
         });
       };
 
-      this.n8nProcess.stdout?.on('data', (data) => {
+      this.n8nProcess!.stdout?.on('data', (data: any) => {
         const txt = data.toString();
         console.log(`[n8n] ${txt}`);
         // n8n 1.x uses 'Editor is now accessible' or 'Listening on'
@@ -472,7 +485,7 @@ export class ServiceManager {
         }
       });
 
-      this.n8nProcess.stderr?.on('data', (data) => {
+      this.n8nProcess!.stderr?.on('data', (data: any) => {
         const txt = data.toString();
         // n8n writes INFO logs to stderr too — not all are errors
         console.log(`[n8n LOG] ${txt}`);
@@ -486,7 +499,7 @@ export class ServiceManager {
         }
       });
 
-      this.n8nProcess.on('exit', (code) => {
+      this.n8nProcess!.on('exit', (code: any) => {
         console.log(`n8n exited with code ${code}`);
         this.n8nProcess = null;
         this.n8nReady = false;
