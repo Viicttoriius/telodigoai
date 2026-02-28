@@ -103,7 +103,7 @@
       "target": "nsis",
       "icon": "resources/icon.ico"
     },
-    "npmRebuild": false,
+    "npmRebuild": true,
     "nsis": {
       "include": "build/installer.nsh",
       "oneClick": false,
