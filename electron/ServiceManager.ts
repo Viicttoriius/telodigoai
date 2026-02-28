@@ -370,7 +370,7 @@ export class ServiceManager {
       // In a real scenario, you'd likely unpack node_modules or have a standalone n8n binary
       // For this "black box" concept, we assume it's available in the unpacked resources or similar
       // Fallback to trying to run it from the bundled node_modules if possible, or expect it in bin
-      n8nPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'n8n', 'bin', 'n8n');
+      n8nPath = path.join(process.resourcesPath, 'app', 'node_modules', 'n8n', 'bin', 'n8n');
     } else {
       n8nPath = path.join(process.cwd(), 'node_modules', 'n8n', 'bin', 'n8n');
     }

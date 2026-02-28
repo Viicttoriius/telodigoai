@@ -70,7 +70,7 @@
   "build": {
     "appId": "com.telodigo.app",
     "productName": "Telodigo AI",
-    "asar": true,
+    "asar": false,
     "asarUnpack": [
       "**/node_modules/n8n/**/*",
       "**/node_modules/better-sqlite3/**/*",
