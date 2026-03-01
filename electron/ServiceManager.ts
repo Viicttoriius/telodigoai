@@ -693,10 +693,10 @@ export class ServiceManager {
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true
       });
-      
+
       this.ollamaProcess.stdout?.on('data', (data) => console.log(`[Ollama] ${data}`));
       this.ollamaProcess.stderr?.on('data', (data) => console.log(`[Ollama Error] ${data}`));
-      
+
       console.log('Ollama service started in background.');
     } catch (e) {
       console.error('Failed to start Ollama:', e);
@@ -726,12 +726,12 @@ export class ServiceManager {
       response.data.pipe(writer);
 
       await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
+        writer.on('finish', () => resolve(true));
         writer.on('error', reject);
       });
 
       console.log('Qdrant zip downloaded. Extracting...');
-      
+
       // Extract using PowerShell
       await new Promise((resolve, reject) => {
         const cmd = `Expand-Archive -Path "${zipPath}" -DestinationPath "${this.binPath}" -Force`;
@@ -775,7 +775,7 @@ export class ServiceManager {
     // We can pass config via args or let it use defaults. 
     // Qdrant defaults to ./storage, so we should change CWD or pass env var.
     // Setting QDRANT__STORAGE__STORAGE_PATH env var is supported.
-    
+
     const env = {
       ...process.env,
       QDRANT__STORAGE__STORAGE_PATH: storagePath
