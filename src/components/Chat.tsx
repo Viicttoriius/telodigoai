@@ -116,7 +116,17 @@ export function Chat({ chatId, onFirstMessage }: ChatProps) {
       const response = await axios.post('http://localhost:11434/api/chat', {
         model: 'llama3',
         messages: [
-          { role: 'system', content: `Eres un asistente útil actuando como ${systemRole}. Responde siempre en español.` },
+          {
+            role: 'system',
+            content: `Eres Telodigo AI, un asistente altamente profesional, preciso y veraz.
+            Actúas bajo el rol de ${systemRole}.
+            
+            REGLAS CRÍTICAS:
+            1. RESPONDE SIEMPRE en el MISMO IDIOMA en el que te habla el usuario.
+            2. NUNCA inventes información. Si no sabes algo, admítelo honestamente.
+            3. Sé conciso pero completo.
+            4. Mantén un tono amable y servicial.`
+          },
           ...messages.map(m => ({ role: m.role, content: m.content })),
           { role: 'user', content: userMsg.content }
         ],
@@ -156,8 +166,6 @@ export function Chat({ chatId, onFirstMessage }: ChatProps) {
     return (
       <div className="flex flex-col h-full bg-slate-900 text-slate-100 items-center justify-center p-8">
         <div className="max-w-3xl w-full space-y-10">
-
-          {/* Branding: logo centrado, nombre debajo */}
           <div className="flex flex-col items-center gap-3">
             <TeledigoLogo size={80} />
             <div className="text-center">
@@ -167,8 +175,6 @@ export function Chat({ chatId, onFirstMessage }: ChatProps) {
               <p className="text-slate-500 text-sm mt-1">Selecciona un rol para comenzar la conversación</p>
             </div>
           </div>
-
-          {/* Role grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ROLES.map((role) => (
               <button
@@ -188,7 +194,6 @@ export function Chat({ chatId, onFirstMessage }: ChatProps) {
               </button>
             ))}
           </div>
-
         </div>
       </div>
     );

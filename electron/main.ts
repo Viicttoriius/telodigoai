@@ -76,11 +76,9 @@ function initDb() {
       FOREIGN KEY (automation_id) REFERENCES automations(id) ON DELETE CASCADE
     );
 
-    -- ── Seed default automations if table is empty ───────────────────────────
+    -- ── Seed real automations if table is empty ─────────────────────────────
     INSERT OR IGNORE INTO automations (id, name, description, webhook_id) VALUES
-      ('auto-001', 'Reporte Diario',      'Generar resumen del día',        'reporte-diario'),
-      ('auto-002', 'Sincronizar Correos', 'Descargar nuevos emails',        'sync-emails'),
-      ('auto-003', 'Alerta de Stock',     'Verificar inventario bajo',      'stock-alert');
+      ('gLX3EfYt9ZigGN5y', 'RAG 100% Local (n8n + Ollama)', 'Chat inteligente con tus documentos locales', 'chat-rag-local');
   `);
 
   console.log('[DB] SQLite initialized at', dbPath);

@@ -1,0 +1,51 @@
+
+> telodigo-ai@0.1.10 build
+> npm run generate-secrets && tsc -p electron/tsconfig.json && vite build && electron-builder
+
+
+> telodigo-ai@0.1.10 generate-secrets
+> node scripts/generate-secrets.js
+
+[dotenv@17.3.1] injecting env (3) from .env -- tip: ­ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+Secrets generated at electron/secrets.ts
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+(node:27468) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///D:/Trabajo/TLD%20AI/postcss.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to D:\Trabajo\TLD AI\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[32mÔ£ô[39m 1661 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  0.45 kB[22m[1m[22m[2m Ôöé gzip:   0.29 kB[22m
+[2mdist/[22m[35massets/index-DW-dVHZy.css  [39m[1m[2m 23.51 kB[22m[1m[22m[2m Ôöé gzip:   4.97 kB[22m
+[2mdist/[22m[36massets/index-D-SOYY_E.js   [39m[1m[2m393.34 kB[22m[1m[22m[2m Ôöé gzip: 125.66 kB[22m
+[32mÔ£ô built in 1.88s[39m
+  ÔÇó electron-builder  version=24.13.3 os=10.0.26200
+  ÔÇó loaded configuration  file=package.json ("build" field)
+  ÔÇó @electron/rebuild not required if you use electron-builder, please consider to remove excess dependency from devDependencies
+
+To ensure your native dependencies are always matched electron version, simply add script `"postinstall": "electron-builder install-app-deps" to your `package.json`
+  ÔÇó skipped dependencies rebuild  reason=npmRebuild is set to false
+  ÔÇó packaging       platform=win32 arch=x64 electron=34.5.8 appOutDir=dist_app\win-unpacked
+  Ô¿» remove D:\Trabajo\TLD AI\dist_app\win-unpacked\icudtl.dat: The process cannot access the file because it is being used by another process.
+github.com/develar/go-fs-util.EnsureEmptyDir
+	/Volumes/data/go/pkg/mod/github.com/develar/go-fs-util@v0.0.0-20190620175131-69a2d4542206/fs.go:98
+github.com/develar/app-builder/pkg/electron.UnpackElectron.func1.1
+	/Volumes/data/Documents/app-builder/pkg/electron/electronUnpack.go:38
+github.com/develar/app-builder/pkg/util.MapAsyncConcurrency.func2
+	/Volumes/data/Documents/app-builder/pkg/util/async.go:68
+runtime.goexit
+	/usr/local/Cellar/go/1.17/libexec/src/runtime/asm_amd64.s:1581  
+  Ô¿» D:\Trabajo\TLD AI\node_modules\app-builder-bin\win\x64\app-builder.exe process failed ERR_ELECTRON_BUILDER_CANNOT_EXECUTE
+Exit code:
+1  failedTask=build stackTrace=Error: D:\Trabajo\TLD AI\node_modules\app-builder-bin\win\x64\app-builder.exe process failed ERR_ELECTRON_BUILDER_CANNOT_EXECUTE
+Exit code:
+1
+    at ChildProcess.<anonymous> (D:\Trabajo\TLD AI\node_modules\builder-util\src\util.ts:252:14)
+    at Object.onceWrapper (node:events:623:26)
+    at ChildProcess.emit (node:events:508:28)
+    at ChildProcess.cp.emit (D:\Trabajo\TLD AI\node_modules\cross-spawn\lib\enoent.js:34:29)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:305:5)

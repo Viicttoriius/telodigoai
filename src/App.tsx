@@ -16,6 +16,7 @@ interface Automation {
   id: string;
   name: string;
   description?: string;
+  webhook_id?: string;
 }
 
 function App() {
@@ -24,11 +25,16 @@ function App() {
   const [isRegistered, setIsRegistered] = useState<boolean | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
 
-  const [automations] = useState<Automation[]>([
-    { id: '1', name: 'Reporte Diario', description: 'Generar resumen del día' },
-    { id: '2', name: 'Sincronizar Correos', description: 'Descargar nuevos emails' },
-    { id: '3', name: 'Alerta de Stock', description: 'Verificar inventario bajo' },
-  ]);
+  const [automations, setAutomations] = useState<Automation[]>([]);
+
+  const loadAutomations = async () => {
+    try {
+      const list: Automation[] = await (window as any).api.listAutomations?.() ?? [];
+      setAutomations(list);
+    } catch (e) {
+      console.error('Error loading automations:', e);
+    }
+  };
 
   // Load chat history from local DB
   const loadHistory = async () => {
@@ -54,6 +60,7 @@ function App() {
     });
 
     loadHistory();
+    loadAutomations();
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
@@ -97,7 +104,8 @@ function App() {
 
   const handleRunAutomation = async (automation: Automation) => {
     try {
-      await fetch(`http://localhost:5678/webhook/${automation.id}`, { method: 'POST' });
+      // Usamos webhook_id si existe, si no el ID. n8n espera GET según lo configurado.
+      await fetch(`http://localhost:5678/webhook/${automation.webhook_id || automation.id}`, { method: 'GET' });
     } catch {
       alert(`Error al iniciar: ${automation.name}`);
     }

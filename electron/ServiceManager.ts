@@ -57,6 +57,8 @@ interface ClientInfo {
 export class ServiceManager {
   private n8nProcess: ChildProcess | null = null;
   private tunnelProcess: ChildProcess | null = null;
+  private qdrantProcess: ChildProcess | null = null;
+  private ollamaProcess: ChildProcess | null = null;
   private appDataPath: string;
   private binPath: string;
   private publicUrl: string | null = null;
@@ -82,11 +84,19 @@ export class ServiceManager {
     } else {
       this.binPath = path.join(process.cwd(), 'resources', 'bin');
     }
+
+    // Ensure bin directory exists
+    if (!fs.existsSync(this.binPath)) {
+      fs.mkdirSync(this.binPath, { recursive: true });
+    }
   }
 
   async startServices() {
     try {
       await this.checkAndInstallOllama();
+      await this.startOllama(); // Ensure Ollama is running
+      await this.checkAndInstallQdrant();
+      await this.startQdrant();
       await this.startN8n();
       // Wait until n8n is actually healthy before starting the tunnel
       // so Cloudflare doesn't get a 502 on first probe
@@ -94,6 +104,20 @@ export class ServiceManager {
       await this.startTunnel();
     } catch (error) {
       console.error('Error starting services:', error);
+    }
+  }
+
+  stopServices() {
+    this.isShuttingDown = true;
+    this.stopN8n();
+    this.stopTunnel();
+    if (this.qdrantProcess) {
+      this.qdrantProcess.kill();
+      this.qdrantProcess = null;
+    }
+    if (this.ollamaProcess) {
+      this.ollamaProcess.kill();
+      this.ollamaProcess = null;
     }
   }
 
@@ -651,6 +675,121 @@ export class ServiceManager {
       console.error('Ollama install failed:', error);
       return 'failed';
     }
+  }
+
+  async startOllama() {
+    console.log('Starting Ollama service...');
+    // Check if already running on port 11434
+    try {
+      await axios.get('http://localhost:11434');
+      console.log('Ollama is already running.');
+      return;
+    } catch (e) {
+      // Not running or error, proceed to start
+    }
+
+    try {
+      this.ollamaProcess = spawn('ollama', ['serve'], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true
+      });
+      
+      this.ollamaProcess.stdout?.on('data', (data) => console.log(`[Ollama] ${data}`));
+      this.ollamaProcess.stderr?.on('data', (data) => console.log(`[Ollama Error] ${data}`));
+      
+      console.log('Ollama service started in background.');
+    } catch (e) {
+      console.error('Failed to start Ollama:', e);
+    }
+  }
+
+  // --- QDRANT MANAGEMENT ---
+  async checkAndInstallQdrant() {
+    const qdrantPath = path.join(this.binPath, 'qdrant.exe');
+    if (fs.existsSync(qdrantPath)) {
+      console.log('Qdrant binary found.');
+      return;
+    }
+
+    console.log('Qdrant binary not found. Downloading...');
+    const qdrantUrl = 'https://github.com/qdrant/qdrant/releases/latest/download/qdrant-x86_64-pc-windows-msvc.zip';
+    const zipPath = path.join(this.binPath, 'qdrant.zip');
+
+    try {
+      // Download
+      const writer = fs.createWriteStream(zipPath);
+      const response = await axios({
+        url: qdrantUrl,
+        method: 'GET',
+        responseType: 'stream',
+      });
+      response.data.pipe(writer);
+
+      await new Promise((resolve, reject) => {
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+      });
+
+      console.log('Qdrant zip downloaded. Extracting...');
+      
+      // Extract using PowerShell
+      await new Promise((resolve, reject) => {
+        const cmd = `Expand-Archive -Path "${zipPath}" -DestinationPath "${this.binPath}" -Force`;
+        exec(`powershell -Command "${cmd}"`, (err) => {
+          if (err) reject(err);
+          else resolve(true);
+        });
+      });
+
+      // Cleanup zip
+      fs.unlinkSync(zipPath);
+      console.log('Qdrant installed successfully.');
+    } catch (e) {
+      console.error('Failed to download/install Qdrant:', e);
+    }
+  }
+
+  async startQdrant() {
+    const qdrantPath = path.join(this.binPath, 'qdrant.exe');
+    if (!fs.existsSync(qdrantPath)) {
+      console.error('Cannot start Qdrant: binary not found.');
+      return;
+    }
+
+    // Check if running
+    try {
+      await axios.get('http://localhost:6333');
+      console.log('Qdrant is already running.');
+      return;
+    } catch (e) {
+      // Not running
+    }
+
+    console.log('Starting Qdrant...');
+    // Qdrant needs a storage directory. We'll use appData/qdrant_storage
+    const storagePath = path.join(this.appDataPath, 'qdrant_storage');
+    if (!fs.existsSync(storagePath)) {
+      fs.mkdirSync(storagePath, { recursive: true });
+    }
+
+    // We can pass config via args or let it use defaults. 
+    // Qdrant defaults to ./storage, so we should change CWD or pass env var.
+    // Setting QDRANT__STORAGE__STORAGE_PATH env var is supported.
+    
+    const env = {
+      ...process.env,
+      QDRANT__STORAGE__STORAGE_PATH: storagePath
+    };
+
+    this.qdrantProcess = spawn(qdrantPath, [], {
+      env,
+      cwd: this.binPath, // Run from bin so it finds config if any (though we override storage)
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+
+    this.qdrantProcess.stdout?.on('data', (data) => console.log(`[Qdrant] ${data}`));
+    this.qdrantProcess.stderr?.on('data', (data) => console.log(`[Qdrant Error] ${data}`));
   }
 
   async pullModel(model: string) {
